@@ -1,16 +1,15 @@
 ﻿using DearImguiSharp;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gbfr.utility.modtools;
+namespace gbfr.utility.modtools.Windows;
 
 public unsafe class LogWindow
 {
-    public static bool _isOpen = false;
+    public static bool IsOpen = false;
 
     public static bool _autoScroll = true;
 
@@ -19,10 +18,10 @@ public unsafe class LogWindow
 
     public static void Render()
     {
-        if (!_isOpen)
+        if (!IsOpen)
             return;
 
-        if (ImGui.Begin("Log Window", ref _isOpen, 0))
+        if (ImGui.Begin("Log Window", ref IsOpen, 0))
         {
             if (ImGui.SmallButton("Clear"))
                 _lines.Clear();

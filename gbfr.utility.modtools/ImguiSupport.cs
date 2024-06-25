@@ -12,6 +12,7 @@ using Reloaded.Hooks.Definitions;
 using Reloaded.Imgui.Hook.Direct3D11;
 using Reloaded.Imgui.Hook.Implementations;
 using Reloaded.Imgui.Hook;
+using gbfr.utility.modtools.Windows;
 
 namespace gbfr.utility.modtools;
 
@@ -81,7 +82,15 @@ public unsafe class ImguiSupport
             if (ImGui.BeginMenu("Tools", true))
             {
                 if (ImGui.MenuItemEx("Logs", "", "", false, true))
-                    LogWindow._isOpen = true;
+                    LogWindow.IsOpen = true;
+
+                ImGui.EndMenu();
+            }
+
+            if (ImGui.BeginMenu("Managers", true))
+            {
+                if (ImGui.MenuItemEx("CharacterManager", "", "", false, true))
+                    CharacterManagerWindow.IsOpen = true;
 
                 ImGui.EndMenu();
             }
@@ -89,6 +98,7 @@ public unsafe class ImguiSupport
         }
 
         LogWindow.Render();
+        CharacterManagerWindow.Render();
     }
 
     /////////////////////////////

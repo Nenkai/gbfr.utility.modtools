@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using gbfr.utility.modtools.Windows;
 
 
 namespace gbfr.utility.modtools.Hooks;

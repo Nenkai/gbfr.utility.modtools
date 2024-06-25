@@ -57,6 +57,7 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
     private ImguiSupport _imguiSupport;
     private FileLogger _fileLogger;
+    private DatabaseManager _databaseManager;
 
     public Mod(ModContext context)
     {
@@ -82,6 +83,9 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
         _fileLogger = new FileLogger(_hooks);
         _fileLogger.Init(_startupScanner);
+
+        _databaseManager = new DatabaseManager(_hooks);
+        _databaseManager.Init(_startupScanner);
     }
 
     #region Standard Overrides
