@@ -14,12 +14,14 @@ public unsafe class DatabaseTable
     public List<TableColumn> Columns { get; set; }
     public int RowSize { get; set; }
     public StdUnorderedMap* Rows { get; set; }
+    public bool IsVectorMap { get; set; }
 
-    public DatabaseTable(string name, List<TableColumn> columns, int rowSize, StdUnorderedMap* rows)
+    public DatabaseTable(string name, List<TableColumn> columns, int rowSize, StdUnorderedMap* rows, bool isVectorMap = false)
     {
         Name = name;
         Columns = columns;
         RowSize = rowSize;
         Rows = rows;
+        IsVectorMap = isVectorMap;
     }
 }

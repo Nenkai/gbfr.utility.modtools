@@ -42,10 +42,22 @@ public unsafe class DatabaseManager
     {
         _characterManagerHook.OriginalFunction(this_);
 
-        List<TableColumn> charaColumns = TableMappingReader.ReadColumnMappings("chara", new Version(1, 3, 1), out int readSize);
+        CharacterManagerWindow.AddTable("chara", &this_->Chara); // unordered_map<cyan::string_hash32, table::CharaData>
+        CharacterManagerWindow.AddTable("chara_costume", &this_->CharaCostume, isVectorMap: true); // unordered_map<cyan::string_hash32, vector<table::CharaCostumeData>>
+        CharacterManagerWindow.AddTable("chara_exp", &this_->CharaExp); // unordered_map<cyan::string_hash32, table::CharaExpData>
+        CharacterManagerWindow.AddTable("chara_exp_type", &this_->CharaExpType);
+        CharacterManagerWindow.AddTable("chara_status", &this_->CharaStatus);
+        CharacterManagerWindow.AddTable("chara_gem", &this_->CharaGem);
+        CharacterManagerWindow.AddTable("chara_color", &this_->CharaColor);
+        CharacterManagerWindow.AddTable("chara_drain", &this_->CharaDrain);
 
-        var charaTable = new DatabaseTable("chara", charaColumns, readSize,&this_->Chara);
-        CharacterManagerWindow.Tables.Add(charaTable);
-        CharacterManagerWindow.SelectedTable = charaTable;
+        CharacterManagerWindow.AddTable("chara_power_adjust", &this_->CharaPowerAdjust);
+        CharacterManagerWindow.AddTable("chara_power_attenuate", &this_->CharaPowerAttenuate);
+
+        CharacterManagerWindow.AddTable("chara_status_fate", &this_->CharaStatusFate);
+
+        CharacterManagerWindow.AddTable("chara_guest_npc_parameter", &this_->CharaGuestNpcParameter);
+
+        CharacterManagerWindow.AddTable("formation_slot", &this_->FormationSlot);
     }
 }

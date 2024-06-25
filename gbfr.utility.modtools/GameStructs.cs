@@ -61,7 +61,7 @@ public unsafe struct CharacterManager
     public fixed byte char0[56];
     public StdUnorderedMap Chara;
     public StdUnorderedMap CharaCostume;
-    public StdUnorderedMap dwordB8;
+    public StdUnorderedMap CharaExp;
     public StdUnorderedMap CharaExpType;
     public StdUnorderedMap CharaStatus;
     public StdUnorderedMap CharaGem;
