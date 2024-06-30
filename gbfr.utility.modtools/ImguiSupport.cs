@@ -42,6 +42,9 @@ public unsafe class ImguiSupport
 
     private readonly IReloadedHooks? _hooks;
 
+    private List<IImguiWindow> _windows = new();
+    private Dictionary<string, List<IImguiMenuComponent>> _menuCategoryToComponentList = new();
+
     public ImguiSupport(IReloadedHooks hooks)
     {
         _hooks = hooks;
@@ -72,34 +75,55 @@ public unsafe class ImguiSupport
         });
     }
 
+    public void AddWindow(IImguiWindow window, string mainMenuCategory = null)
+    {
+        _windows.Add(window);
+
+        if (!string.IsNullOrEmpty(mainMenuCategory))
+        {
+            if (!_menuCategoryToComponentList.TryGetValue(mainMenuCategory, out List<IImguiMenuComponent> imguiMenuComponents))
+                _menuCategoryToComponentList.TryAdd(mainMenuCategory, new List<IImguiMenuComponent>() { window });
+            else
+                imguiMenuComponents.Add(window);
+        }
+    }
+
     public void Render()
     {
+        foreach (IImguiWindow window in _windows)
+        {
+            if (window.IsOverlay)
+                window.Render();
+        }
+
         if (!_menuVisible)
-            return;
+           return;
 
         if (ImGui.BeginMainMenuBar())
         {
-            if (ImGui.BeginMenu("Tools", true))
+            foreach (var mainMenuCategory in _menuCategoryToComponentList)
             {
-                if (ImGui.MenuItemEx("Logs", "", "", false, true))
-                    LogWindow.IsOpen = true;
+                if (ImGui.BeginMenu(mainMenuCategory.Key, true))
+                {
+                    foreach (IImguiMenuComponent component in mainMenuCategory.Value)
+                    {
+                        component.BeginMenuComponent();
+                    }
 
-                ImGui.EndMenu();
+                    ImGui.EndMenu();
+                }
             }
 
-            if (ImGui.BeginMenu("Managers", true))
-            {
-                if (ImGui.MenuItemEx("CharacterManager", "", "", false, true))
-                    CharacterManagerWindow.IsOpen = true;
-
-                ImGui.EndMenu();
-            }
             ImGui.EndMainMenuBar();
         }
 
-        LogWindow.Render();
-        CharacterManagerWindow.Render();
+        foreach (var window in _windows)
+        {
+            if (!window.IsOverlay)
+                window.Render();
+        }
     }
+
 
     /////////////////////////////
     // HOOKS
@@ -154,7 +178,7 @@ public unsafe class ImguiSupport
         var io = ImGui.GetIO();
         if (instance == _mouseDevice && io.WantCaptureMouse ||
             instance == _keyboardDevice && io.WantCaptureKeyboard) // ImGui wants input? don't forward to game
-            return 0; // DI_OK
+            return 1; // DI_OK
 
         var res = _getDeviceStateHook.OriginalFunction(instance, cbData, lpvData);
 

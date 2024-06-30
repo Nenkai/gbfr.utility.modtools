@@ -17,6 +17,7 @@ namespace gbfr.utility.modtools.Hooks;
 public unsafe class FileLogger
 {
     private IReloadedHooks _hooks;
+    private LogWindow _logWindow;
 
     private delegate void OpenFile(FileOpenResult* result, uint a2, StringWrap* fileName);
     private IHook<OpenFile> _openFileHook;
@@ -27,9 +28,11 @@ public unsafe class FileLogger
     private delegate void OpenFile2(IntPtr a1, StringWrap* fileName, IntPtr @params, IntPtr a4, IntPtr a5);
     private IHook<OpenFile2> _openFile2Hook;
 
-    public FileLogger(IReloadedHooks hooks)
+
+    public FileLogger(IReloadedHooks hooks, LogWindow logWindow)
     {
         _hooks = hooks;
+        _logWindow = logWindow;
     }
 
     public void Init(IStartupScanner startupScanner)
@@ -71,9 +74,9 @@ public unsafe class FileLogger
             string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
 
             if (result->pFileStorage is null)
-                LogWindow.Log(nameof(FileLogger), $"open (not found): {str}");
+                _logWindow.Log(nameof(FileLogger), $"open (not found): {str}");
             else
-                LogWindow.Log(nameof(FileLogger), $"open (ok): {str}, size=0x{result->FileSize:X8}");
+                _logWindow.Log(nameof(FileLogger), $"open (ok): {str}, size=0x{result->FileSize:X8}");
         }
         
     }
@@ -86,9 +89,9 @@ public unsafe class FileLogger
         {
             string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
             if (res == 0)
-                LogWindow.Log(nameof(FileLogger), $"exists (not found): {str}");
+                _logWindow.Log(nameof(FileLogger), $"exists (not found): {str}");
             else
-                LogWindow.Log(nameof(FileLogger), $"exists (ok): {str}");
+                _logWindow.Log(nameof(FileLogger), $"exists (ok): {str}");
         }
         
         return res;
@@ -101,7 +104,7 @@ public unsafe class FileLogger
         if (fileName is not null && fileName->pStr is not null)
         {
             string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
-            LogWindow.Log(nameof(FileLogger), $"open2: {str}");
+            _logWindow.Log(nameof(FileLogger), $"open2: {str}");
         }
     }
 }

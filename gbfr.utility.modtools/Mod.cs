@@ -14,6 +14,8 @@ using DearImguiSharp;
 using gbfr.utility.modtools.Configuration;
 using gbfr.utility.modtools.Template;
 using gbfr.utility.modtools.Hooks;
+using gbfr.utility.modtools.Windows;
+using gbfr.utility.modtools.Windows.Tables;
 
 namespace gbfr.utility.modtools;
 
@@ -57,7 +59,14 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
     private ImguiSupport _imguiSupport;
     private FileLogger _fileLogger;
-    private DatabaseManager _databaseManager;
+    private GameStateHook _gameStateHook;
+
+    private CharacterManagerHook _charManagerHook;
+    private GemManagerHook _gemManagerHook;
+    private ItemManagerHook _itemManagerHook;
+    private LimitApManagerHook _limitApManagerHook;
+    private SkillManagerHook _skillManagerHook;
+    private WeaponManagerHook _weaponManagerHook;
 
     public Mod(ModContext context)
     {
@@ -77,16 +86,65 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 #if DEBUG
         Debugger.Launch();
 #endif
-
         _imguiSupport = new ImguiSupport(_hooks);
         _imguiSupport.SetupImgui();
 
-        _fileLogger = new FileLogger(_hooks);
+        LogWindow logWindow = new LogWindow();
+        _imguiSupport.AddWindow(logWindow, "Tools");
+
+        _fileLogger = new FileLogger(_hooks, logWindow);
         _fileLogger.Init(_startupScanner);
 
-        _databaseManager = new DatabaseManager(_hooks);
-        _databaseManager.Init(_startupScanner);
+        _gameStateHook = new GameStateHook(_hooks);
+        _gameStateHook.Init(_startupScanner);
+
+        var camPosOverlay = new GameOverlay(_gameStateHook);
+        _imguiSupport.AddWindow(camPosOverlay);
+
+        CreateImGuiWindows();
     }
+
+    public void CreateImGuiWindows()
+    {
+        // Create windows
+        CharacterManagerWindow characterManagerWindow = new();
+        _imguiSupport.AddWindow(characterManagerWindow, "Managers");
+
+        GemManagerWindow gemManagerWindow = new();
+        _imguiSupport.AddWindow(gemManagerWindow, "Managers");
+
+        ItemManagerWindow itemManagerWindow = new();
+        _imguiSupport.AddWindow(itemManagerWindow, "Managers");
+
+        LimitManagerWindow limitManagerWindow = new();
+        _imguiSupport.AddWindow(limitManagerWindow, "Managers");
+
+        SkillManagerWindow skillManagerWindow = new();
+        _imguiSupport.AddWindow(skillManagerWindow, "Managers");
+
+        WeaponManagerWindow weaponManagerWindow = new();
+        _imguiSupport.AddWindow(weaponManagerWindow, "Managers");
+
+        // Create hooks for windows
+        _charManagerHook = new CharacterManagerHook(_hooks, characterManagerWindow);
+        _charManagerHook.Init(_startupScanner);
+
+        _gemManagerHook = new GemManagerHook(_hooks, gemManagerWindow);
+        _gemManagerHook.Init(_startupScanner);
+
+        _itemManagerHook = new ItemManagerHook(_hooks, itemManagerWindow);
+        _itemManagerHook.Init(_startupScanner);
+
+        _limitApManagerHook = new LimitApManagerHook(_hooks, limitManagerWindow);
+        _limitApManagerHook.Init(_startupScanner);
+
+        _skillManagerHook = new SkillManagerHook(_hooks, skillManagerWindow);
+        _skillManagerHook.Init(_startupScanner);
+
+        _weaponManagerHook = new WeaponManagerHook(_hooks, weaponManagerWindow);
+        _weaponManagerHook.Init(_startupScanner);
+    }
+
 
     #region Standard Overrides
     public override void ConfigurationUpdated(Config configuration)

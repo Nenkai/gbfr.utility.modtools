@@ -7,16 +7,25 @@ using System.Threading.Tasks;
 
 namespace gbfr.utility.modtools.Windows;
 
-public unsafe class LogWindow
+public unsafe class LogWindow : IImguiWindow, IImguiMenuComponent
 {
-    public static bool IsOpen = false;
+    public bool IsOverlay => false;
 
-    public static bool _autoScroll = true;
+    public bool IsOpen = false;
+    public bool _autoScroll = true;
 
     public static List<LogMessage> _lines = new List<LogMessage>(2000);
     private static object _lock = new object();
 
-    public static void Render()
+    public void BeginMenuComponent()
+    {
+        if (ImGui.MenuItemEx("Logs", "", "", false, true))
+        {
+            IsOpen = true;
+        }
+    }
+
+    public void Render()
     {
         if (!IsOpen)
             return;
@@ -71,7 +80,7 @@ public unsafe class LogWindow
         }
     }
 
-    public static void Log(string handler, string message)
+    public void Log(string handler, string message)
     {
         lock (_lock)
         {

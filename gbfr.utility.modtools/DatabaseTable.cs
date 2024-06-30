@@ -13,7 +13,8 @@ public unsafe class DatabaseTable
     public string Name { get; set; }
     public List<TableColumn> Columns { get; set; }
     public int RowSize { get; set; }
-    public StdUnorderedMap* Rows { get; set; }
+    public StdUnorderedMap* RowMap { get; set; }
+    public StdVector* RowVector { get; set; }
     public bool IsVectorMap { get; set; }
 
     public DatabaseTable(string name, List<TableColumn> columns, int rowSize, StdUnorderedMap* rows, bool isVectorMap = false)
@@ -21,7 +22,16 @@ public unsafe class DatabaseTable
         Name = name;
         Columns = columns;
         RowSize = rowSize;
-        Rows = rows;
+        RowMap = rows;
+        IsVectorMap = isVectorMap;
+    }
+
+    public DatabaseTable(string name, List<TableColumn> columns, int rowSize, StdVector* rows, bool isVectorMap = false)
+    {
+        Name = name;
+        Columns = columns;
+        RowSize = rowSize;
+        RowVector = rows;
         IsVectorMap = isVectorMap;
     }
 }
