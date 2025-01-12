@@ -1,14 +1,15 @@
-﻿using DearImguiSharp;
-using gbfr.utility.modtools.Hooks;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gbfr.utility.modtools.Windows;
+using DearImguiSharp;
+
+using gbfr.utility.modtools.Hooks;
+
+namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
 public unsafe class GameOverlay : IImguiWindow
 {
@@ -24,7 +25,7 @@ public unsafe class GameOverlay : IImguiWindow
 
     public void BeginMenuComponent()
     {
-        
+
     }
 
     public void Render()

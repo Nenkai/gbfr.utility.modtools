@@ -10,39 +10,42 @@ using System.Diagnostics;
 
 using GBFRDataTools.Database;
 using GBFRDataTools.Database.Entities;
-using gbfr.utility.modtools.Windows.Tables;
+using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
+using SharedScans.Interfaces;
 
 namespace gbfr.utility.modtools.Hooks;
 
 public unsafe class CharacterManagerHook
 {
-    private IReloadedHooks _hooks;
+    private ISharedScans _scans;
 
-    private delegate void CharacterManagerLoad(CharacterManager* this_);
-    private IHook<CharacterManagerLoad> _characterManagerHook;
+    public delegate void CharacterManagerLoad(CharacterManager* this_);
+    public HookContainer<CharacterManagerLoad> HOOK_CharacterManagerLoad { get; private set; }
 
     private CharacterManagerWindow _characterManagerWindow;
-    public CharacterManagerHook(IReloadedHooks hooks, CharacterManagerWindow characterManagerWindow)
+
+    public Dictionary<string, string> Patterns = new()
     {
-        _hooks = hooks;
+        [nameof(CharacterManagerLoad)] = "55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ?? ?? ?? ?? 48 8D AC 24 ?? ?? ?? ?? C5 78 29 8D ?? ?? ?? ?? C5 78 29 45 ?? C5 F8 29 7D ?? C5 F8 29 75 ?? 48 C7 45 ?? ?? ?? ?? ?? 48 89 CB",
+    };
+
+    public CharacterManagerHook(ISharedScans scans, CharacterManagerWindow characterManagerWindow)
+    {
+        _scans = scans;
         _characterManagerWindow = characterManagerWindow;
     }
 
-    public void Init(IStartupScanner startupScanner)
+    public void Init()
     {
-        startupScanner.AddMainModuleScan("55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ?? ?? ?? ?? 48 8D AC 24 ?? ?? ?? ?? C5 78 29 8D ?? ?? ?? ?? C5 78 29 45 ?? C5 F8 29 7D ?? C5 F8 29 75 ?? 48 C7 45 ?? ?? ?? ?? ?? 48 89 CB", e =>
-        {
-            if (!e.Found)
-                return;
+        foreach (var pattern in Patterns)
+            _scans.AddScan(pattern.Key, pattern.Value);
 
-            var addr = Process.GetCurrentProcess().MainModule.BaseAddress + e.Offset;
-            _characterManagerHook = _hooks.CreateHook<CharacterManagerLoad>(CharacterManagerLoadImpl, addr).Activate();
-        });
+        HOOK_CharacterManagerLoad = _scans.CreateHook<CharacterManagerLoad>(CharacterManagerLoadImpl, "a");
     }
 
     public void CharacterManagerLoadImpl(CharacterManager* this_)
     {
-        _characterManagerHook.OriginalFunction(this_);
+        HOOK_CharacterManagerLoad.Hook.OriginalFunction(this_);
 
         _characterManagerWindow.AddTableMap("chara", &this_->Chara); // unordered_map<cyan::string_hash32, table::CharaData>
         _characterManagerWindow.AddTableMap("chara_costume", &this_->CharaCostume, isVectorMap: true); // unordered_map<cyan::string_hash32, vector<table::CharaCostumeData>>

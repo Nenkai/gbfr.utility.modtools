@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gbfr.utility.modtools.Windows;
+namespace gbfr.utility.modtools.ImGuiSupport;
 
 public interface IImguiMenuComponent
 {

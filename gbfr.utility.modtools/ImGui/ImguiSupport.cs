@@ -12,9 +12,11 @@ using Reloaded.Hooks.Definitions;
 using Reloaded.Imgui.Hook.Direct3D11;
 using Reloaded.Imgui.Hook.Implementations;
 using Reloaded.Imgui.Hook;
-using gbfr.utility.modtools.Windows;
 
-namespace gbfr.utility.modtools;
+using gbfr.utility.modtools.ImGuiSupport.Windows;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+
+namespace gbfr.utility.modtools.ImGuiSupport;
 
 public unsafe class ImguiSupport
 {
@@ -24,13 +26,13 @@ public unsafe class ImguiSupport
     public delegate bool SetCursorPos(int X, int Y);
     private IHook<SetCursorPos> _setCursorPosHook;
 
-    public delegate IntPtr DirectInput8Create(IntPtr hinst, int dwVersion, IntPtr riidltf, IntPtr ppvOut, IntPtr punkOuter);
+    public delegate nint DirectInput8Create(nint hinst, int dwVersion, nint riidltf, nint ppvOut, nint punkOuter);
     private IHook<DirectInput8Create> _directInputCreateHook;
 
-    public delegate IntPtr CreateDevice(IntPtr instance, Guid rguid, IntPtr lplpDirectInputDevice, IntPtr pUnkOuter);
+    public delegate nint CreateDevice(nint instance, Guid rguid, nint lplpDirectInputDevice, nint pUnkOuter);
     private IHook<CreateDevice> _createDeviceHook;
 
-    public delegate UIntPtr GetDeviceState(IntPtr instance, int cbData, byte* lpvData);
+    public delegate nuint GetDeviceState(nint instance, int cbData, byte* lpvData);
     private IHook<GetDeviceState> _getDeviceStateHook;
 
     public static readonly Guid SysMouse = new Guid("6f1d2b60-d5a0-11cf-bfc7-444553540000");
@@ -53,17 +55,17 @@ public unsafe class ImguiSupport
     public void SetupImgui()
     {
         // Hook cursor visibility as the game hides it
-        IntPtr kernel32Handle = NativeMethods.LoadLibraryW("user32");
-        IntPtr showCursorPtr = NativeMethods.GetProcAddress(kernel32Handle, "ShowCursor");
+        nint kernel32Handle = NativeMethods.LoadLibraryW("user32");
+        nint showCursorPtr = NativeMethods.GetProcAddress(kernel32Handle, "ShowCursor");
         _showCursorHook = _hooks.CreateHook<ShowCursor>(ShowCursorImpl, showCursorPtr).Activate();
 
         // Hook cursor position as the game sets it to center of the screen otherwise?
-        IntPtr setCursorPosPtr = NativeMethods.GetProcAddress(kernel32Handle, "SetCursorPos");
+        nint setCursorPosPtr = NativeMethods.GetProcAddress(kernel32Handle, "SetCursorPos");
         _setCursorPosHook = _hooks.CreateHook<SetCursorPos>(SetCursorPosImpl, setCursorPosPtr).Activate();
 
         // Chain hook direct input so imgui inputs don't also get passed to the game.
         var handle = NativeMethods.GetModuleHandle("dinput8.dll");
-        IntPtr directInput8CreatePtr = NativeMethods.GetProcAddress(handle, "DirectInput8Create");
+        nint directInput8CreatePtr = NativeMethods.GetProcAddress(handle, "DirectInput8Create");
         _directInputCreateHook = _hooks.CreateHook<DirectInput8Create>(DirectInput8CreateImpl, directInput8CreatePtr).Activate();
 
         SDK.Init(_hooks);
@@ -80,12 +82,15 @@ public unsafe class ImguiSupport
         _windows.Add(window);
 
         if (!string.IsNullOrEmpty(mainMenuCategory))
-        {
-            if (!_menuCategoryToComponentList.TryGetValue(mainMenuCategory, out List<IImguiMenuComponent> imguiMenuComponents))
-                _menuCategoryToComponentList.TryAdd(mainMenuCategory, new List<IImguiMenuComponent>() { window });
-            else
-                imguiMenuComponents.Add(window);
-        }
+            AddComponent(mainMenuCategory, window);
+    }
+
+    public void AddComponent(string category, IImguiMenuComponent component)
+    {
+        if (!_menuCategoryToComponentList.TryGetValue(category, out List<IImguiMenuComponent> imguiMenuComponents))
+            _menuCategoryToComponentList.TryAdd(category, new List<IImguiMenuComponent>() { component });
+        else
+            imguiMenuComponents.Add(component);
     }
 
     public void Render()
@@ -97,7 +102,7 @@ public unsafe class ImguiSupport
         }
 
         if (!_menuVisible)
-           return;
+            return;
 
         if (ImGui.BeginMainMenuBar())
         {
@@ -129,9 +134,9 @@ public unsafe class ImguiSupport
     // HOOKS
     /////////////////////////////
 
-    private IntPtr DirectInput8CreateImpl(IntPtr hinst, int dwVersion, IntPtr riidltf, IntPtr ppvOut, IntPtr punkOuter)
+    private nint DirectInput8CreateImpl(nint hinst, int dwVersion, nint riidltf, nint ppvOut, nint punkOuter)
     {
-        IntPtr result = _directInputCreateHook.OriginalFunction(hinst, dwVersion, riidltf, ppvOut, punkOuter);
+        nint result = _directInputCreateHook.OriginalFunction(hinst, dwVersion, riidltf, ppvOut, punkOuter);
 
         // Get location of IDirectInput8::CreateDevice and hook it
         long* instancePtr = (long*)*(long*)ppvOut;
@@ -142,14 +147,14 @@ public unsafe class ImguiSupport
         return result;
     }
 
-    private IntPtr _mouseDevice;
-    private IntPtr _keyboardDevice;
-    private IntPtr CreateDeviceImpl(IntPtr /* this */ instance, Guid rguid, IntPtr lplpDirectInputDevice, IntPtr pUnkOuter)
+    private nint _mouseDevice;
+    private nint _keyboardDevice;
+    private nint CreateDeviceImpl(nint /* this */ instance, Guid rguid, nint lplpDirectInputDevice, nint pUnkOuter)
     {
         if (_directInputCreateHook.IsHookEnabled)
             _directInputCreateHook.Disable();
 
-        IntPtr result = _createDeviceHook.OriginalFunction(instance, rguid, lplpDirectInputDevice, pUnkOuter);
+        nint result = _createDeviceHook.OriginalFunction(instance, rguid, lplpDirectInputDevice, pUnkOuter);
         long* instancePtr = (long*)*(long*)lplpDirectInputDevice;
 
         if (_getDeviceStateHook is null)
@@ -163,17 +168,17 @@ public unsafe class ImguiSupport
 
         if (rguid == SysMouse)
         {
-            _mouseDevice = (IntPtr)instancePtr;
+            _mouseDevice = (nint)instancePtr;
         }
         else if (rguid == SysKeyboard)
         {
-            _keyboardDevice = (IntPtr)instancePtr;
+            _keyboardDevice = (nint)instancePtr;
         }
 
         return result;
     }
 
-    private UIntPtr GetDeviceStateImpl(IntPtr instance, int cbData, byte* lpvData)
+    private nuint GetDeviceStateImpl(nint instance, int cbData, byte* lpvData)
     {
         var io = ImGui.GetIO();
         if (instance == _mouseDevice && io.WantCaptureMouse ||

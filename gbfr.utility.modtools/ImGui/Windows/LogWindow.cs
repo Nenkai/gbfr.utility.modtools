@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gbfr.utility.modtools.Windows;
+namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
 public unsafe class LogWindow : IImguiWindow, IImguiMenuComponent
 {
@@ -23,6 +23,13 @@ public unsafe class LogWindow : IImguiWindow, IImguiMenuComponent
         {
             IsOpen = true;
         }
+    }
+
+    private StreamWriter _sw = new StreamWriter("log.txt");
+
+    ~LogWindow()
+    {
+        _sw.Dispose();
     }
 
     public void Render()
@@ -88,7 +95,9 @@ public unsafe class LogWindow : IImguiWindow, IImguiMenuComponent
                 _lines.Remove(_lines[0]);
 
             _lines.Add(new LogMessage(DateTime.UtcNow, handler, message));
+            _sw.WriteLine(message);
         }
+
     }
 
     public record LogMessage(DateTime Time, string Handler, string Message);

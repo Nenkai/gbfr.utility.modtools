@@ -11,12 +11,12 @@ using DearImguiSharp;
 using GBFRDataTools.Database;
 using GBFRDataTools.Database.Entities;
 
-namespace gbfr.utility.modtools.Windows.Tables;
+namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
-public class ItemManagerWindow : TableEditorWindow
+public class SkillManagerWindow : TableEditorWindow
 {
-    public ItemManagerWindow()
-        : base("ItemManager")
+    public SkillManagerWindow()
+        : base("SkillManager")
     {
 
     }

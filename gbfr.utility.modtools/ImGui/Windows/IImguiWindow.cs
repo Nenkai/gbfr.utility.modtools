@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using gbfr.utility.modtools.ImGuiSupport;
 
-namespace gbfr.utility.modtools.Windows;
+namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
 public interface IImguiWindow : IImguiMenuComponent
 {

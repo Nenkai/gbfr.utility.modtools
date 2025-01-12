@@ -10,10 +10,8 @@ using DearImguiSharp;
 
 using GBFRDataTools.Database;
 using GBFRDataTools.Database.Entities;
-using System.Numerics;
-using System.Runtime.Intrinsics;
 
-namespace gbfr.utility.modtools.Windows.Tables;
+namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public unsafe class TableEditorWindow : IImguiWindow
 {

@@ -14,8 +14,10 @@ using DearImguiSharp;
 using gbfr.utility.modtools.Configuration;
 using gbfr.utility.modtools.Template;
 using gbfr.utility.modtools.Hooks;
-using gbfr.utility.modtools.Windows;
-using gbfr.utility.modtools.Windows.Tables;
+using gbfr.utility.modtools.ImGuiSupport.Windows;
+using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
+using gbfr.utility.modtools.ImGuiSupport;
+using SharedScans.Interfaces;
 
 namespace gbfr.utility.modtools;
 
@@ -56,9 +58,13 @@ public unsafe class Mod : ModBase // <= Do not Remove.
     private readonly IModConfig _modConfig;
 
     private static IStartupScanner? _startupScanner = null!;
+    private static ISharedScans? _sharedScans = null!;
 
     private ImguiSupport _imguiSupport;
+
     private FileLogger _fileLogger;
+    private ReflectionHooks _reflectionHooks;
+
     private GameStateHook _gameStateHook;
 
     private CharacterManagerHook _charManagerHook;
@@ -77,23 +83,35 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         _configuration = context.Configuration;
         _modConfig = context.ModConfig;
 
+#if DEBUG
+        Debugger.Launch();
+#endif
+
         var startupScannerController = _modLoader.GetController<IStartupScanner>();
         if (startupScannerController == null || !startupScannerController.TryGetTarget(out _startupScanner))
         {
             return;
         }
 
-#if DEBUG
-        Debugger.Launch();
-#endif
+        var sharedScansController = _modLoader.GetController<ISharedScans>();
+        if (sharedScansController == null || !sharedScansController.TryGetTarget(out _sharedScans))
+        {
+            _logger.WriteLine($"[{_modConfig.ModId}] Unable to get ISharedScans. Framework will not load!");
+            return;
+        }
+
+
         _imguiSupport = new ImguiSupport(_hooks);
         _imguiSupport.SetupImgui();
 
         LogWindow logWindow = new LogWindow();
         _imguiSupport.AddWindow(logWindow, "Tools");
 
-        _fileLogger = new FileLogger(_hooks, logWindow);
-        _fileLogger.Init(_startupScanner);
+        //_fileLogger = new FileLogger(_sharedScans, logWindow);
+        //_fileLogger.Init();
+
+        _reflectionHooks = new ReflectionHooks(_sharedScans, logWindow);
+        _reflectionHooks.Init();
 
         _gameStateHook = new GameStateHook(_hooks);
         _gameStateHook.Init(_startupScanner);
@@ -126,14 +144,14 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         _imguiSupport.AddWindow(weaponManagerWindow, "Managers");
 
         // Create hooks for windows
-        _charManagerHook = new CharacterManagerHook(_hooks, characterManagerWindow);
-        _charManagerHook.Init(_startupScanner);
+        _charManagerHook = new CharacterManagerHook(_sharedScans, characterManagerWindow);
+        _charManagerHook.Init();
 
-        _gemManagerHook = new GemManagerHook(_hooks, gemManagerWindow);
-        _gemManagerHook.Init(_startupScanner);
+        _gemManagerHook = new GemManagerHook(_sharedScans, gemManagerWindow);
+        _gemManagerHook.Init();
 
-        _itemManagerHook = new ItemManagerHook(_hooks, itemManagerWindow);
-        _itemManagerHook.Init(_startupScanner);
+        _itemManagerHook = new ItemManagerHook(_sharedScans, itemManagerWindow);
+        _itemManagerHook.Init();
 
         _limitApManagerHook = new LimitApManagerHook(_hooks, limitManagerWindow);
         _limitApManagerHook.Init(_startupScanner);
@@ -143,6 +161,10 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
         _weaponManagerHook = new WeaponManagerHook(_hooks, weaponManagerWindow);
         _weaponManagerHook.Init(_startupScanner);
+
+        // Main menu stuff
+        _imguiSupport.AddComponent("Tools", new DumpMenuButton(_reflectionHooks));
+        
     }
 
 

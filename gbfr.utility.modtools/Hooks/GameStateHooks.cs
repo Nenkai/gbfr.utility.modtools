@@ -10,7 +10,6 @@ using System.Diagnostics;
 
 using GBFRDataTools.Database;
 using GBFRDataTools.Database.Entities;
-using gbfr.utility.modtools.Windows.Tables;
 
 namespace gbfr.utility.modtools.Hooks;
 
