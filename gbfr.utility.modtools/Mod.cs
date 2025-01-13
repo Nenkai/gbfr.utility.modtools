@@ -15,6 +15,7 @@ using gbfr.utility.modtools.Configuration;
 using gbfr.utility.modtools.Template;
 using gbfr.utility.modtools.Hooks;
 using gbfr.utility.modtools.ImGuiSupport.Windows;
+using gbfr.utility.modtools.ImGuiSupport.MenuButtons;
 using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 using gbfr.utility.modtools.ImGuiSupport;
 using SharedScans.Interfaces;
@@ -102,13 +103,21 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
 
         _imguiSupport = new ImguiSupport(_hooks);
-        _imguiSupport.SetupImgui();
+        _imguiSupport.SetupImgui(_modLoader.GetDirectoryForModId(_modConfig.ModId));
+
+
+        CreateImGuiWindows();
+    }
+
+    public void CreateImGuiWindows()
+    {
+        // TODO: Cleanup this function
 
         LogWindow logWindow = new LogWindow();
         _imguiSupport.AddWindow(logWindow, "Tools");
 
-        //_fileLogger = new FileLogger(_sharedScans, logWindow);
-        //_fileLogger.Init();
+        _fileLogger = new FileLogger(_sharedScans, logWindow);
+        _fileLogger.Init();
 
         _reflectionHooks = new ReflectionHooks(_sharedScans, logWindow);
         _reflectionHooks.Init();
@@ -116,14 +125,9 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         _gameStateHook = new GameStateHook(_hooks);
         _gameStateHook.Init(_startupScanner);
 
-        var camPosOverlay = new GameOverlay(_gameStateHook);
-        _imguiSupport.AddWindow(camPosOverlay);
+        // Main menu stuff
+        _imguiSupport.AddComponent("Tools", new DumpMenuButton(_reflectionHooks));
 
-        CreateImGuiWindows();
-    }
-
-    public void CreateImGuiWindows()
-    {
         // Create windows
         CharacterManagerWindow characterManagerWindow = new();
         _imguiSupport.AddWindow(characterManagerWindow, "Managers");
@@ -162,9 +166,14 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         _weaponManagerHook = new WeaponManagerHook(_hooks, weaponManagerWindow);
         _weaponManagerHook.Init(_startupScanner);
 
-        // Main menu stuff
-        _imguiSupport.AddComponent("Tools", new DumpMenuButton(_reflectionHooks));
-        
+
+        var camPosOverlay = new GameOverlay(_gameStateHook);
+        _imguiSupport.AddWindow(camPosOverlay, "Other");
+
+        _imguiSupport.AddComponent("Other", new MouseControlButton(_imguiSupport));
+        _imguiSupport.AddMenuSeparator("Other");
+        _imguiSupport.AddWindow(new DemoWindow(), "Other");
+        _imguiSupport.AddWindow(new AboutWindow(_modConfig), "Other");
     }
 
 

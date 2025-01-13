@@ -25,21 +25,15 @@ public unsafe class GameOverlay : IImguiWindow
 
     public void BeginMenuComponent()
     {
-
+        ImGui.MenuItemBoolPtr("Enable Overlay", "", ref _open, true);
     }
 
     public void Render()
     {
-        var vecInternal = new ImVec2.__Internal();
-        var vector = new ImVec2(&vecInternal); // Heap allocation
-        vector.X = 10;
-        vector.Y = 10;
-
-        var vec2Internal = new ImVec2.__Internal();
-        var vector2 = new ImVec2(&vec2Internal); // Heap allocation
+        if (!_open)
+            return;
 
         var viewport = ImGui.GetMainViewport();
-        ImGui.SetNextWindowPos(vector, 0, vector2);
         ImGui.SetNextWindowBgAlpha(0.35f);
         if (ImGui.Begin("overlay", ref _open, (int)(ImGuiWindowFlags.NoDecoration |
             ImGuiWindowFlags.NoDocking |
@@ -57,10 +51,15 @@ public unsafe class GameOverlay : IImguiWindow
             ImGui.Spacing();
 
             ImGui.Text($"Last Quest ID: {*(int*)_gameStateHook.QuestIdPtr:X6}");
+            ImGui.Text($"Phase ID: p{*(ushort*)_gameStateHook.PhaseIdPtr:X3}");
 
+            var vecInternal = new ImVec2.__Internal();
+            var vector = new ImVec2(&vecInternal); // Heap allocation
+            vector.X = ImGui.GetIO().DisplaySize.X - ImGui.GetWindowWidth() - 10;
+            vector.Y = 10;
+
+            ImGui.SetWindowPosVec2(vector, 1);
             ImGui.End();
         }
-
-
     }
 }

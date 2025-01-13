@@ -52,4 +52,13 @@
     <PackageReference Include="SharedScans.Interfaces" Version="1.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Fonts\Roboto\LICENSE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Fonts\Roboto\Roboto-Medium.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

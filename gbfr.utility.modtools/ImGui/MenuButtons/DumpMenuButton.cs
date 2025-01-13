@@ -8,8 +8,9 @@ using System.Threading.Tasks;
 using DearImguiSharp;
 
 using gbfr.utility.modtools.Hooks;
+using gbfr.utility.modtools.ImGuiSupport;
 
-namespace gbfr.utility.modtools.ImGuiSupport;
+namespace gbfr.utility.modtools.ImGuiSupport.MenuButtons;
 
 public unsafe class DumpMenuButton : IImguiMenuComponent
 {

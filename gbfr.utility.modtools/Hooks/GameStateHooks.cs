@@ -20,6 +20,7 @@ public unsafe class GameStateHook
     public nint PlayerPosPtr;
     public nint CamPosPtr;
     public nint QuestIdPtr;
+    public nint PhaseIdPtr;
 
     public GameStateHook(IReloadedHooks hooks)
     {
@@ -64,6 +65,12 @@ public unsafe class GameStateHook
 
             nint addr = Process.GetCurrentProcess().MainModule.BaseAddress + e.Offset;
             QuestIdPtr = addr + *(int*)(addr + 2) + 6; // +7 because size of instruction
+        });
+
+        startupScanner.AddMainModuleScan("C7 05 ?? ?? ?? ?? ?? ?? ?? ?? C5 F8 57 C0 C5 F8 11 05 ?? ?? ?? ?? C5 F8 11 05 ?? ?? ?? ?? C7 05 ?? ?? ?? ?? ?? ?? ?? ?? C5 F0 57 C9", e =>
+        {
+            nint addr = Process.GetCurrentProcess().MainModule.BaseAddress + e.Offset;
+            PhaseIdPtr = addr + *(int*)(addr + 2) + 10; // +10 because size of instruction
         });
 
         

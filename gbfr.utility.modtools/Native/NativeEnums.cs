@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gbfr.utility.modtools;
+namespace gbfr.utility.modtools.Native;
 
 public struct RawMouseState
 {
