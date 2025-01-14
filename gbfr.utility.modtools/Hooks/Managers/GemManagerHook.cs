@@ -13,20 +13,18 @@ using GBFRDataTools.Database.Entities;
 using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 using SharedScans.Interfaces;
 
-namespace gbfr.utility.modtools.Hooks;
+namespace gbfr.utility.modtools.Hooks.Managers;
 
-public unsafe class GemManagerHook
+public unsafe class GemManagerHook : TableManagerBase
 {
     private ISharedScans _scans;
 
     public delegate void GemManagerLoad(GemManager* this_);
     public HookContainer<GemManagerLoad> HOOK_GemManagerLoad { get; private set; }
 
-    private GemManagerWindow _gemManagerWindow;
-    public GemManagerHook(ISharedScans scans, GemManagerWindow gemManagerWindow)
+    public GemManagerHook(ISharedScans scans)
     {
         _scans = scans;
-        _gemManagerWindow = gemManagerWindow;
     }
 
     public Dictionary<string, string> Patterns = new()
@@ -49,13 +47,13 @@ public unsafe class GemManagerHook
     {
         HOOK_GemManagerLoad.Hook.OriginalFunction(this_);
 
-        _gemManagerWindow.AddTableMap("gem", &this_->Gem); // unordered_map<cyan::string_hash32, table::GemData>
-        _gemManagerWindow.AddTableMap("gem_rare", &this_->GemRare); // unordered_map<cyan::string_hash32, table::GemRare>
+        AddTableMap("gem", &this_->Gem); // unordered_map<cyan::string_hash32, table::GemData>
+        AddTableMap("gem_rare", &this_->GemRare); // unordered_map<cyan::string_hash32, table::GemRare>
         //_gemManagerWindow.AddTableMap("gem_type", &this_->GemType); // unordered_map<uint, table::GemTypeData>>
-        _gemManagerWindow.AddTableMap("gem_ticket", &this_->GemTicket, isVectorMap: true); // unordered_map<int, vector<table::GemTicket>
-        _gemManagerWindow.AddTableMap("gem_sell", &this_->GemSell, isVectorMap: true); // unordered_map<int, vector<table::GemSell>>
-        _gemManagerWindow.AddTableMap("gem_mix_rupi", &this_->GemMixRupi); // unordered_map<int, table::GemMixRupiData>
-        _gemManagerWindow.AddTableMap("gem_mix_success", &this_->GemMixSuccess); // unordered_map<int, table::GemMixTicketData>
-        _gemManagerWindow.AddTableMap("gem_mix_ticket", &this_->GemMixTicket); // unordered_map<cyan::string_hash32, table::GemMixTicketData>
+        AddTableMap("gem_ticket", &this_->GemTicket, isVectorMap: true); // unordered_map<int, vector<table::GemTicket>
+        AddTableMap("gem_sell", &this_->GemSell, isVectorMap: true); // unordered_map<int, vector<table::GemSell>>
+        AddTableMap("gem_mix_rupi", &this_->GemMixRupi); // unordered_map<int, table::GemMixRupiData>
+        AddTableMap("gem_mix_success", &this_->GemMixSuccess); // unordered_map<int, table::GemMixTicketData>
+        AddTableMap("gem_mix_ticket", &this_->GemMixTicket); // unordered_map<cyan::string_hash32, table::GemMixTicketData>
     }
 }

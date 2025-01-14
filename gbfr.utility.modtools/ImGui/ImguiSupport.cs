@@ -214,8 +214,6 @@ public unsafe class ImguiSupport
             instance == _keyboardDevice && io.WantCaptureKeyboard) // ImGui wants input? don't forward to game
             return 0x8007001E; // DIERR_LOSTINPUT
 
-        Console.WriteLine($"Want mouse: {io.WantCaptureMouse}, want key: {io.WantCaptureKeyboard}");
-
         var res = _getDeviceStateHook.OriginalFunction(instance, cbData, lpvData);
 
         if (instance == _mouseDevice)

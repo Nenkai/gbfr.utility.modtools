@@ -10,13 +10,14 @@ using DearImguiSharp;
 
 using GBFRDataTools.Database;
 using GBFRDataTools.Database.Entities;
+using gbfr.utility.modtools.Hooks.Managers;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class LimitManagerWindow : TableEditorWindow
 {
-    public LimitManagerWindow()
-        : base("LimitManager")
+    public LimitManagerWindow(TableManagerBase tableManagerBase)
+        : base("LimitManager", tableManagerBase)
     {
 
     }

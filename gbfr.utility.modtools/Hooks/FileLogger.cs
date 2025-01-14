@@ -6,20 +6,16 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-using Reloaded.Hooks.Definitions;
-using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-using IReloadedHooks = Reloaded.Hooks.ReloadedII.Interfaces.IReloadedHooks;
-
-using gbfr.utility.modtools.ImGuiSupport.Windows;
 using SharedScans.Interfaces;
-using static gbfr.utility.modtools.Hooks.CharacterManagerHook;
+using Reloaded.Mod.Interfaces;
+
 
 namespace gbfr.utility.modtools.Hooks;
 
 public unsafe class FileLogger
 {
     private ISharedScans _scans;
-    private LogWindow _logWindow;
+    private ILogger _logger;
 
     public delegate void OpenFile(FileOpenResult* result, uint a2, StringWrap* fileName);
     public HookContainer<OpenFile> HOOK_OpenFile { get; private set; }
@@ -37,10 +33,10 @@ public unsafe class FileLogger
         [nameof(OpenFile2)] = "55 41 57 41 56 56 57 53 48 81 EC ?? ?? ?? ?? 48 8D AC 24 ?? ?? ?? ?? 48 C7 85 ?? ?? ?? ?? ?? ?? ?? ?? 4D 89 CE 48 89 D7",
     };
 
-    public FileLogger(ISharedScans scans, LogWindow logWindow)
+    public FileLogger(ISharedScans scans, ILogger logger)
     {
         _scans = scans;
-        _logWindow = logWindow;
+        _logger = logger;
     }
 
     public void Init()
@@ -62,9 +58,9 @@ public unsafe class FileLogger
             string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
 
             if (result->pFileStorage is null)
-                _logWindow.Log(nameof(FileLogger), $"open (not found): {str}");
+                _logger.WriteLine($"open (not found): {str}");
             else
-                _logWindow.Log(nameof(FileLogger), $"open (ok): {str}, size=0x{result->FileSize:X8}");
+                _logger.WriteLine($"open (ok): {str}, size=0x{result->FileSize:X8}");
         }
         
     }
@@ -77,9 +73,9 @@ public unsafe class FileLogger
         {
             string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
             if (res == 0)
-                _logWindow.Log(nameof(FileLogger), $"exists (not found): {str}");
+                _logger.WriteLine($"exists (not found): {str}");
             else
-                _logWindow.Log(nameof(FileLogger), $"exists (ok): {str}");
+                _logger.WriteLine($"exists (ok): {str}");
         }
         
         return res;
@@ -92,7 +88,7 @@ public unsafe class FileLogger
         if (fileName is not null && fileName->pStr is not null)
         {
             string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
-            _logWindow.Log(nameof(FileLogger), $"open2: {str}");
+            _logger.WriteLine($"open2: {str}");
         }
     }
 }

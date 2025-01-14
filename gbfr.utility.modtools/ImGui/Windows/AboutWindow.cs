@@ -40,8 +40,12 @@ public unsafe class AboutWindow : IImguiWindow, IImguiMenuComponent
             ImGui.Text($"{_modConfig.ModId} {_modConfig.ModVersion}");
             ImGui.Text($"Made by {_modConfig.ModAuthor}");
             ImGui.Spacing();
+
             ImGui.Text("Keys:");
             ImGui.Text("- INSERT: Show ImGui Menu");
+            ImGui.Spacing();
+
+            ImGui.Text("NOTE: Logs are also saved as a file in the game's directory as 'modtools_log.txt'.");
         }
     }
 }

@@ -10,13 +10,14 @@ using DearImguiSharp;
 
 using GBFRDataTools.Database;
 using GBFRDataTools.Database.Entities;
+using gbfr.utility.modtools.Hooks.Managers;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class ItemManagerWindow : TableEditorWindow
 {
-    public ItemManagerWindow()
-        : base("ItemManager")
+    public ItemManagerWindow(TableManagerBase tableManagerBase)
+        : base("ItemManager", tableManagerBase)
     {
 
     }

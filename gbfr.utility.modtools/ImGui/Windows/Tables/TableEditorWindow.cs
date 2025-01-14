@@ -10,6 +10,7 @@ using DearImguiSharp;
 
 using GBFRDataTools.Database;
 using GBFRDataTools.Database.Entities;
+using gbfr.utility.modtools.Hooks.Managers;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
@@ -17,55 +18,26 @@ public unsafe class TableEditorWindow : IImguiWindow
 {
     public bool IsOverlay => false;
 
-    private bool _isOpen;
-    private bool _groupRows;
-
     public string WindowName { get; set; }
 
-    public List<DatabaseTable> Tables { get; set; } = new();
     public DatabaseTable SelectedTable { get; set; }
 
+    private bool _isOpen;
+    private bool _groupRows;
     private bool _appliedColumnWidths = false;
-
     public float[] _colWidths;
+    private TableManagerBase _tableManagerBase;
 
-    public TableEditorWindow(string windowName)
+    public TableEditorWindow(string windowName, TableManagerBase managerBase)
     {
         WindowName = windowName;
+        _tableManagerBase = managerBase;
     }
 
     public void BeginMenuComponent()
     {
         if (ImGui.MenuItemEx(WindowName, "", "", false, true))
             _isOpen = true;
-    }
-
-    public void AddTableMap(string name, StdUnorderedMap* rows, bool isVectorMap = false)
-    {
-        List<TableColumn> columns = TableMappingReader.ReadColumnMappings(name, new Version(1, 3, 1), out int readSize);
-
-        var table = new DatabaseTable(name, columns, readSize, rows, isVectorMap);
-        Tables.Add(table);
-
-        if (SelectedTable is null)
-        {
-            SelectedTable = table;
-            OnSelectedTable();
-        }
-    }
-
-    public void AddTableVector(string name, StdVector* rows)
-    {
-        List<TableColumn> columns = TableMappingReader.ReadColumnMappings(name, new Version(1, 3, 1), out int readSize);
-        var table = new DatabaseTable(name, columns, readSize, rows);
-
-        Tables.Add(table);
-
-        if (SelectedTable is null)
-        {
-            SelectedTable = table;
-            OnSelectedTable();
-        }
     }
 
     public void OnSelectedTable()
@@ -84,9 +56,9 @@ public unsafe class TableEditorWindow : IImguiWindow
             var vecInternal = new ImVec2.__Internal();
             var vector = new ImVec2(&vecInternal); // Heap allocation
 
-            if (ImGui.BeginCombo("Table", SelectedTable.Name, (int)ImGuiComboFlags.None))
+            if (ImGui.BeginCombo("Table", SelectedTable?.Name ?? "<select a table>", (int)ImGuiComboFlags.None))
             {
-                foreach (var table in Tables)
+                foreach (var table in _tableManagerBase.Tables)
                 {
                     bool isSelected = table == SelectedTable;
                     if (ImGui.SelectableBool(table.Name, isSelected, 0, vector))
@@ -114,20 +86,23 @@ public unsafe class TableEditorWindow : IImguiWindow
 
     private void RenderTable()
     {
-        var vecInternal = new ImVec2.__Internal();
-        var vector = new ImVec2(&vecInternal); // Heap allocation
-
-        int numColumns = SelectedTable.IsVectorMap && _groupRows ? 1 : 1 + SelectedTable.Columns.Count;
-        if (ImGui.BeginTable("#tbl", numColumns,
-            (int)(ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable),
-            vector, 0.0f))
+        if (SelectedTable is not null)
         {
-            if (SelectedTable.RowMap is not null)
-                RenderTableFromUnorderedMap(SelectedTable.RowMap);
-            else
-                RenderTableFromVector(SelectedTable.RowVector);
+            var vecInternal = new ImVec2.__Internal();
+            var vector = new ImVec2(&vecInternal); // Heap allocation
 
-            ImGui.EndTable();
+            int numColumns = SelectedTable.IsVectorMap && _groupRows ? 1 : 1 + SelectedTable.Columns.Count;
+            if (ImGui.BeginTable("#tbl", numColumns,
+                (int)(ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable),
+                vector, 0.0f))
+            {
+                if (SelectedTable.RowMap is not null)
+                    RenderTableFromUnorderedMap(SelectedTable.RowMap);
+                else
+                    RenderTableFromVector(SelectedTable.RowVector);
+
+                ImGui.EndTable();
+            }
         }
     }
 

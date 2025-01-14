@@ -14,11 +14,15 @@ using gbfr.utility.modtools.ImGuiSupport.Windows;
 using SharedScans.Interfaces;
 using System.Xml.Linq;
 using System.Numerics;
+using Reloaded.Mod.Interfaces;
 
 namespace gbfr.utility.modtools.Hooks;
 
 public unsafe class ReflectionHooks
 {
+    private readonly ISharedScans _scans;
+    private readonly ILogger _logger;
+
     private readonly static Dictionary<string, RelinkObjectType> _knownObjects = new();
     public int ObjectCount => _knownObjects.Count;
     public bool HasLoadedObjects { get; private set; } = false;
@@ -26,9 +30,6 @@ public unsafe class ReflectionHooks
     private nint _charaParameterBaseList;
 
     private readonly Lock _lock = new();
-
-    private readonly ISharedScans _scans;
-    private readonly LogWindow _logWindow;
 
     public static HookContainer<RegisterReflectionObjectDelegate> HOOK_ReflectionAddObject { get; private set; }
 
@@ -60,10 +61,10 @@ public unsafe class ReflectionHooks
         [nameof(GetNewBehaviorTreeComponentByName)] = "56 48 83 EC ?? E8 ?? ?? ?? ?? 4C 8B 05",
     };
 
-    public ReflectionHooks(ISharedScans scans, LogWindow window)
+    public ReflectionHooks(ISharedScans scans, ILogger logger)
     {
         _scans = scans;
-        _logWindow = window;
+        _logger = logger;
     }
 
     public void Init()
@@ -117,7 +118,7 @@ public unsafe class ReflectionHooks
             if (!_knownObjects.ContainsKey(objectName))
             {
                 RegisterType(objectDef->pObjectType);
-                _logWindow.Log(nameof(ReflectionHooks), $"Registered new reflected object: {objectName}");
+                _logger.WriteLine($"Registered new reflected object: {objectName}");
             }
         }
 
@@ -196,11 +197,11 @@ public unsafe class ReflectionHooks
         }
 
         if (!string.IsNullOrEmpty(objectType.InheritName))
-            _logWindow.Log(nameof(ReflectionHooks), $"public class {objectType.Name} : {objectType.InheritName}");
+            _logger.WriteLine($"public class {objectType.Name} : {objectType.InheritName}");
         else
-            _logWindow.Log(nameof(ReflectionHooks), $"public class {objectType.Name}");
+            _logger.WriteLine($"public class {objectType.Name}");
 
-        _logWindow.Log(nameof(ReflectionHooks), "{");
+        _logger.WriteLine("{");
 
         RelinkObjectType inheritType = null;
         if (!string.IsNullOrEmpty(objectType.InheritName) && _knownObjects.TryGetValue(objectType.InheritName, out inheritType))
@@ -215,8 +216,8 @@ public unsafe class ReflectionHooks
         }
 
         // Generate constructor with attributes from inheriting class
-        _logWindow.Log(nameof(ReflectionHooks), $"    public {objectType.Name}()");
-        _logWindow.Log(nameof(ReflectionHooks), "    {");
+        _logger.WriteLine($"    public {objectType.Name}()");
+        _logger.WriteLine("    {");
 
         foreach (KeyValuePair<string, RelinkObjectAttribute> attr in objectType.Attributes)
         {
@@ -232,15 +233,14 @@ public unsafe class ReflectionHooks
                         humanizedAttrName = FirstCharToUpper(humanizedAttrName);
                     }
 
-                    _logWindow.Log(nameof(ReflectionHooks), $"        {humanizedAttrName}{GetValueStr(attr.Value, defaultObjectPtr)}");
+                    _logger.WriteLine($"        {humanizedAttrName}{GetValueStr(attr.Value, defaultObjectPtr)}");
                 }
             }
         }
-        _logWindow.Log(nameof(ReflectionHooks), "    }");
+        _logger.WriteLine("    }");
 
-
-        _logWindow.Log(nameof(ReflectionHooks), "}");
-        _logWindow.Log(nameof(ReflectionHooks), "\n");
+        _logger.WriteLine("}");
+        _logger.WriteLine("\n");
     }
 
     private void AddProperty(RelinkObjectAttribute attribute, nint defaultObjectPtr)
@@ -252,9 +252,11 @@ public unsafe class ReflectionHooks
         humanizedAttrName = FirstCharToUpper(humanizedAttrName);
         string valueStr = GetValueStr(attribute, defaultObjectPtr);
 
-        _logWindow.Log(nameof(ReflectionHooks), $"    [JsonPropertyName(\"{attribute.Name}\")]");
-        _logWindow.Log(nameof(ReflectionHooks), $"    public {TypeToCSharpType(attribute.Type)} {humanizedAttrName} {{ get; set; }}{valueStr} // Offset 0x{attribute.AttributePtr->dwOffset:X}");
-        _logWindow.Log(nameof(ReflectionHooks), "");
+        _logger.WriteLine($"    [JsonPropertyName(\"{attribute.Name}\")]");
+        _logger.WriteLine($"    public {TypeToCSharpType(attribute.Type)} {humanizedAttrName} {{ get; set; }}{valueStr} " +
+            $"// Offset 0x{(attribute.AttributePtr->field_0x08 == 1 ? attribute.AttributePtr->field_0x38 : attribute.AttributePtr->dwOffset):X}");
+
+        _logger.WriteLine("");
         //_logWindow.Log(nameof(ReflectionDumper), $"    {attrTypeName} {humanizedAttrName}; // 0x{XXHash32Custom.Hash(humanizedAttrName):X8}");
         //_logWindow.Log(nameof(ReflectionDumper), ($"    {attrTypeName} {attrName}; // Offset 0x{attr->dwOffset:X}, 0x08:{attr->field_0x08}, 0x38:{attr->field_0x38}"));
 

@@ -1,31 +1,25 @@
-﻿using Reloaded.Hooks.Definitions;
-using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-using GBFRDataTools.Database;
-using GBFRDataTools.Database.Entities;
-using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
+using Reloaded.Hooks.Definitions;
+using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 
-namespace gbfr.utility.modtools.Hooks;
+namespace gbfr.utility.modtools.Hooks.Managers;
 
-public unsafe class SkillManagerHook
+public unsafe class SkillManagerHook : TableManagerBase
 {
     private IReloadedHooks _hooks;
 
     private delegate void SkillManagerLoad(SkillManager* this_);
     private IHook<SkillManagerLoad> _skillManagerLoadHook;
 
-    private SkillManagerWindow _skillManagerWindow;
-    public SkillManagerHook(IReloadedHooks hooks, SkillManagerWindow skillManagerWindow)
+    public SkillManagerHook(IReloadedHooks hooks)
     {
         _hooks = hooks;
-        _skillManagerWindow = skillManagerWindow;
     }
 
     public void Init(IStartupScanner startupScanner)
@@ -50,11 +44,11 @@ public unsafe class SkillManagerHook
     {
         _skillManagerLoadHook.OriginalFunction(this_);
 
-        _skillManagerWindow.AddTableMap("skill", &this_->Skill); // unordered_map<cyan::string_hash32, table::SkillData>
-        _skillManagerWindow.AddTableMap("skill_status", &this_->SkillStatus, isVectorMap: true); // unordered_map<int, vector<table::SkillStatusData>>
-        _skillManagerWindow.AddTableMap("skill_lot", &this_->SkillLot, isVectorMap: true); // unordered_map<cyan::string_hash32, vector<table::SkillLotData>>
-        _skillManagerWindow.AddTableMap("skill_type_lot", &this_->SkillTypeLot); // unordered_map<int, table::SkillTypeLotData>
-        _skillManagerWindow.AddTableMap("skill_level_lot", &this_->SkillLevelLot); // unordered_map<int, table::SkillLevelLotData>
+        AddTableMap("skill", &this_->Skill); // unordered_map<cyan::string_hash32, table::SkillData>
+        AddTableMap("skill_status", &this_->SkillStatus, isVectorMap: true); // unordered_map<int, vector<table::SkillStatusData>>
+        AddTableMap("skill_lot", &this_->SkillLot, isVectorMap: true); // unordered_map<cyan::string_hash32, vector<table::SkillLotData>>
+        AddTableMap("skill_type_lot", &this_->SkillTypeLot); // unordered_map<int, table::SkillTypeLotData>
+        AddTableMap("skill_level_lot", &this_->SkillLevelLot); // unordered_map<int, table::SkillLevelLotData>
 
     }
 }

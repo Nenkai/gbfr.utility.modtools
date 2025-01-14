@@ -19,6 +19,7 @@ using gbfr.utility.modtools.ImGuiSupport.MenuButtons;
 using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 using gbfr.utility.modtools.ImGuiSupport;
 using SharedScans.Interfaces;
+using gbfr.utility.modtools.Hooks.Managers;
 
 namespace gbfr.utility.modtools;
 
@@ -75,6 +76,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
     private SkillManagerHook _skillManagerHook;
     private WeaponManagerHook _weaponManagerHook;
 
+    private EffectDataHooks _effectDataHooks;
+
     public Mod(ModContext context)
     {
         _modLoader = context.ModLoader;
@@ -101,71 +104,73 @@ public unsafe class Mod : ModBase // <= Do not Remove.
             return;
         }
 
-
         _imguiSupport = new ImguiSupport(_hooks);
         _imguiSupport.SetupImgui(_modLoader.GetDirectoryForModId(_modConfig.ModId));
 
-
+        CreateHooks();
         CreateImGuiWindows();
+    }
+
+    private void CreateHooks()
+    {
+        _gameStateHook = new GameStateHook(_hooks);
+        _gameStateHook.Init(_startupScanner);
+
+        _reflectionHooks = new ReflectionHooks(_sharedScans, _logger);
+        _reflectionHooks.Init();
+
+        _fileLogger = new FileLogger(_sharedScans, _logger);
+        _fileLogger.Init();
+
+        _effectDataHooks = new EffectDataHooks(_sharedScans);
+        _effectDataHooks.Init();
+
+        // Create hooks for windows
+        _charManagerHook = new CharacterManagerHook(_sharedScans);
+        _charManagerHook.Init();
+
+        _gemManagerHook = new GemManagerHook(_sharedScans);
+        _gemManagerHook.Init();
+
+        _itemManagerHook = new ItemManagerHook(_sharedScans);
+        _itemManagerHook.Init();
+
+        _limitApManagerHook = new LimitApManagerHook(_hooks);
+        _limitApManagerHook.Init(_startupScanner);
+
+        _skillManagerHook = new SkillManagerHook(_hooks);
+        _skillManagerHook.Init(_startupScanner);
+
+        _weaponManagerHook = new WeaponManagerHook(_hooks);
+        _weaponManagerHook.Init(_startupScanner);
     }
 
     public void CreateImGuiWindows()
     {
-        // TODO: Cleanup this function
-
-        LogWindow logWindow = new LogWindow();
+        LogWindow logWindow = new LogWindow(_logger);
         _imguiSupport.AddWindow(logWindow, "Tools");
-
-        _fileLogger = new FileLogger(_sharedScans, logWindow);
-        _fileLogger.Init();
-
-        _reflectionHooks = new ReflectionHooks(_sharedScans, logWindow);
-        _reflectionHooks.Init();
-
-        _gameStateHook = new GameStateHook(_hooks);
-        _gameStateHook.Init(_startupScanner);
 
         // Main menu stuff
         _imguiSupport.AddComponent("Tools", new DumpMenuButton(_reflectionHooks));
 
         // Create windows
-        CharacterManagerWindow characterManagerWindow = new();
+        CharacterManagerWindow characterManagerWindow = new(_charManagerHook);
         _imguiSupport.AddWindow(characterManagerWindow, "Managers");
 
-        GemManagerWindow gemManagerWindow = new();
+        GemManagerWindow gemManagerWindow = new(_gemManagerHook);
         _imguiSupport.AddWindow(gemManagerWindow, "Managers");
 
-        ItemManagerWindow itemManagerWindow = new();
+        ItemManagerWindow itemManagerWindow = new(_itemManagerHook);
         _imguiSupport.AddWindow(itemManagerWindow, "Managers");
 
-        LimitManagerWindow limitManagerWindow = new();
+        LimitManagerWindow limitManagerWindow = new(_limitApManagerHook);
         _imguiSupport.AddWindow(limitManagerWindow, "Managers");
 
-        SkillManagerWindow skillManagerWindow = new();
+        SkillManagerWindow skillManagerWindow = new(_skillManagerHook);
         _imguiSupport.AddWindow(skillManagerWindow, "Managers");
 
-        WeaponManagerWindow weaponManagerWindow = new();
+        WeaponManagerWindow weaponManagerWindow = new(_weaponManagerHook);
         _imguiSupport.AddWindow(weaponManagerWindow, "Managers");
-
-        // Create hooks for windows
-        _charManagerHook = new CharacterManagerHook(_sharedScans, characterManagerWindow);
-        _charManagerHook.Init();
-
-        _gemManagerHook = new GemManagerHook(_sharedScans, gemManagerWindow);
-        _gemManagerHook.Init();
-
-        _itemManagerHook = new ItemManagerHook(_sharedScans, itemManagerWindow);
-        _itemManagerHook.Init();
-
-        _limitApManagerHook = new LimitApManagerHook(_hooks, limitManagerWindow);
-        _limitApManagerHook.Init(_startupScanner);
-
-        _skillManagerHook = new SkillManagerHook(_hooks, skillManagerWindow);
-        _skillManagerHook.Init(_startupScanner);
-
-        _weaponManagerHook = new WeaponManagerHook(_hooks, weaponManagerWindow);
-        _weaponManagerHook.Init(_startupScanner);
-
 
         var camPosOverlay = new GameOverlay(_gameStateHook);
         _imguiSupport.AddWindow(camPosOverlay, "Other");

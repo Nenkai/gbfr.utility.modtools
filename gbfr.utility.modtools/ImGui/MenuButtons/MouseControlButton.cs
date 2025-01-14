@@ -23,6 +23,6 @@ public unsafe class MouseControlButton : IImguiMenuComponent
 
     public void BeginMenuComponent()
     {
-        ImGui.MenuItemBoolPtr($"Enable camera control while menu is active", "", ref _imguiSupport.MouseActiveWhileMenuOpen, true);
+        ImGui.MenuItemBoolPtr($"Enable mouse control while menu is active", "", ref _imguiSupport.MouseActiveWhileMenuOpen, true);
     }
 }
