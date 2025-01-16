@@ -36,11 +36,11 @@ public unsafe class LogWindow : IImguiWindow, IImguiMenuComponent
         {
             if (LastLines.Count >= 2000)
                 LastLines.Remove(LastLines[0]);
-        }
 
-        var logMsg = new LogMessage(DateTime.UtcNow, sender.ToString(), e.text);
-        LastLines.Add(logMsg);
-        _sw.WriteLine(e.text);
+            var logMsg = new LogMessage(DateTime.UtcNow, sender.ToString(), e.text);
+            LastLines.Add(logMsg);
+            _sw.WriteLine(e.text);
+        }
     }
 
     public void BeginMenuComponent()

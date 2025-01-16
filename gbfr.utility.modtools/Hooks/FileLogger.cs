@@ -17,7 +17,7 @@ public unsafe class FileLogger
     private ISharedScans _scans;
     private ILogger _logger;
 
-    public delegate void OpenFile(FileOpenResult* result, uint a2, StringWrap* fileName);
+    public delegate void OpenFile(FileLoadResult* result, uint a2, StringWrap* fileName);
     public HookContainer<OpenFile> HOOK_OpenFile { get; private set; }
 
     public delegate int FileExists(StringWrap* fileName);
@@ -49,7 +49,7 @@ public unsafe class FileLogger
         HOOK_OpenFile2 = _scans.CreateHook<OpenFile2>(OpenFile2Impl, "a");
     }
 
-    private void OpenFileImpl(FileOpenResult* result, uint a2, StringWrap* fileName)
+    private void OpenFileImpl(FileLoadResult* result, uint a2, StringWrap* fileName)
     {
         HOOK_OpenFile.Hook.OriginalFunction(result, a2, fileName);
 
@@ -57,7 +57,7 @@ public unsafe class FileLogger
         {
             string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
 
-            if (result->pFileStorage is null)
+            if (result->ChunkFileStorage is null)
                 _logger.WriteLine($"open (not found): {str}");
             else
                 _logger.WriteLine($"open (ok): {str}, size=0x{result->FileSize:X8}");

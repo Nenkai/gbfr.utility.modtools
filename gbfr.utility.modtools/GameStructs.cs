@@ -4,14 +4,31 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace gbfr.utility.modtools;
 
-public unsafe struct FileOpenResult
+public unsafe struct FileLoadResult
 {
-    public void* pFileStorage; // flatark::impl::Flatark::ChunkFileStorage
-    public byte* pFileData;
+    public FlatArkChunkFileStorage* ChunkFileStorage; // flatark::impl::Flatark::ChunkFileStorage
+    public void* FileBuffer;
     public ulong FileSize;
+}
+
+public unsafe struct FlatArkChunkFileStorage // flatark::impl::Flatark::ChunkFileStorage
+{
+    public nint VTable;
+    public void* FileBuffer;
+}
+
+// Size: 0x50
+public unsafe struct FlatArkCallbackWrapper
+{
+    public nint VTable;
+    public uint field_0x04;
+    public uint field_0x08;
+    public void* Callback;
+    public void* Arg;
 }
 
 public unsafe struct StringWrap
@@ -47,6 +64,9 @@ public unsafe struct StdUnorderedMap
     public StdVector Vec;
     public ulong Mask;
     public ulong MaskIdx;
+
+    public readonly uint Size() => List.Size;
+    public StdListNode* Begin() => List.Node->Next;
 };
 
 public unsafe struct StdVector
@@ -56,115 +76,14 @@ public unsafe struct StdVector
     public void* Myend;
 }
 
-public unsafe struct CharacterManager
+public unsafe struct sEstHeader
 {
-    public uint _UnkHash;
-    public uint _Unk2;
-    public StdVector _AllKeys; // All main keys
-    public fixed byte _pad[0x18];
-
-    public StdUnorderedMap Chara;
-    public StdUnorderedMap CharaCostume;
-    public StdUnorderedMap CharaExp;
-    public StdUnorderedMap CharaExpType;
-    public StdUnorderedMap CharaStatus;
-    public StdUnorderedMap CharaGem;
-    public StdUnorderedMap CharaColor;
-    public StdUnorderedMap CharaDrain;
-    public StdVector CharaDiff;
-    public StdUnorderedMap CharaPowerAdjust;
-    public StdUnorderedMap CharaPowerAttenuate;
-    public StdVector CharaLevelSync;
-    public StdUnorderedMap CharaStatusFate;
-    public StdVector CharaInvite;
-    public StdUnorderedMap CharaGuestNpcParameter;
-    public StdUnorderedMap FormationSlot;
-
-    // ...lots more
-}
-
-public unsafe struct GemManager
-{
-    public StdUnorderedMap Gem;
-    public StdUnorderedMap GemRare;
-    public StdUnorderedMap GemType;
-    public StdUnorderedMap GemTicket;
-    public StdUnorderedMap GemSell;
-    public StdUnorderedMap GemMixRupi;
-    public StdUnorderedMap GemMixSuccess;
-    public StdUnorderedMap GemMixTicket;
-}
-
-public unsafe struct ItemManager
-{
-    public fixed byte char0[0x60];
-    public StdUnorderedMap Item;
-    public StdUnorderedMap ItemCategory;
-    public StdUnorderedMap ItemConsume;
-    public StdUnorderedMap ItemMaterialList;
-    public StdUnorderedMap ItemMaterialCommonAnima;
-    public StdUnorderedMap ItemMaterialCommonSpecial;
-    public StdUnorderedMap ItemMaterialCommonBoss;
-    public StdUnorderedMap ItemMaterialCommonStage;
-    public StdUnorderedMap ItemTierMap;
-    public StdUnorderedMap ItemPendulum;
-    public StdUnorderedMap ItemJunk;
-    public StdUnorderedMap ItemJunkAppearRate;
-    public StdUnorderedMap ItemJunkRate;
-    public StdUnorderedMap ItemImportant;
-    public StdUnorderedMap ItemQuestDetailDisp;
-    public StdUnorderedMap ItemPendulumTicket;
-    public StdUnorderedMap ItemPendulumSell;
-    public StdUnorderedMap DropCoinParam;
-
-    // Not tables
-    public StdVector _ItemKeys; // List of all item keys
-    public StdUnorderedMap _ItemQuestDetailDisp; // Duplicate of ItemQuestDetailDisp?
-}
-
-public unsafe struct LimitManager
-{
-    public StdUnorderedMap LimitBonus;
-    public StdUnorderedMap LimitBonusType;
-    public StdUnorderedMap LimitBonusParam;
-    public StdUnorderedMap LimitBonusParamType;
-    public StdUnorderedMap LimitBonusMeditation;
-    public StdUnorderedMap LimitBonusMeditationCategory;
-    public StdVector LimitBonusMeditationWeight;
-    public StdUnorderedMap ApTreeAtk;
-    public StdUnorderedMap ApTreeDef;
-    public StdUnorderedMap ApTreeWep;
-    public StdUnorderedMap ApOpenRank;
-    // ...
-}
-
-public unsafe struct WeaponManager
-{
-    public StdUnorderedMap Weapon;
-    public StdVector WeaponExp;
-    public StdUnorderedMap WeaponStatus;
-    public StdUnorderedMap WeaponStatusLevelSync;
-    public StdUnorderedMap WeaponStatusAwake;
-    public StdUnorderedMap WeaponStatusPlus;
-    public StdVector WeaponLimit;
-    public StdUnorderedMap WeaponSkillLevel;
-    // ...
-}
-
-public unsafe struct SkillManager
-{
-    public StdVector _AllKeys;
-
-    public StdUnorderedMap Skill;
-    public StdUnorderedMap SkillStatus;
-    public StdUnorderedMap SkillLot;
-    public StdUnorderedMap SkillTypeLot;
-    public StdUnorderedMap SkillLevelLot;
-    public StdUnorderedMap LimitBonusMeditationCategory;
-    public StdVector LimitBonusMeditationWeight;
-    public StdUnorderedMap ApTreeAtk;
-    public StdUnorderedMap ApTreeDef;
-    public StdUnorderedMap ApTreeWep;
-    public StdUnorderedMap ApOpenRank;
-    // ...
+    public fixed char name[4];
+    public uint NumEntries;
+    public uint EntryArrayMapOffset;
+    public uint OffsetOfFunctions;
+    public uint EntryDataOffsetStart;
+    public uint FunctionSize;
+    public uint NumFunctionsPerTable;
+    public uint _pad_;
 }

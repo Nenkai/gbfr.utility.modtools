@@ -20,6 +20,8 @@ using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 using gbfr.utility.modtools.ImGuiSupport;
 using SharedScans.Interfaces;
 using gbfr.utility.modtools.Hooks.Managers;
+using gbfr.utility.modtools.Hooks.Effects;
+using gbfr.utility.modtools.Hooks.Reflection;
 
 namespace gbfr.utility.modtools;
 
@@ -119,8 +121,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         _reflectionHooks = new ReflectionHooks(_sharedScans, _logger);
         _reflectionHooks.Init();
 
-        _fileLogger = new FileLogger(_sharedScans, _logger);
-        _fileLogger.Init();
+        //_fileLogger = new FileLogger(_sharedScans, _logger);
+        //_fileLogger.Init();
 
         _effectDataHooks = new EffectDataHooks(_sharedScans);
         _effectDataHooks.Init();
@@ -171,6 +173,9 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
         WeaponManagerWindow weaponManagerWindow = new(_weaponManagerHook);
         _imguiSupport.AddWindow(weaponManagerWindow, "Managers");
+
+        EffectEditWindow effectEditWindow = new EffectEditWindow(_effectDataHooks);
+        _imguiSupport.AddWindow(effectEditWindow, "Effects");
 
         var camPosOverlay = new GameOverlay(_gameStateHook);
         _imguiSupport.AddWindow(camPosOverlay, "Other");
