@@ -22,6 +22,7 @@ using SharedScans.Interfaces;
 using gbfr.utility.modtools.Hooks.Managers;
 using gbfr.utility.modtools.Hooks.Effects;
 using gbfr.utility.modtools.Hooks.Reflection;
+using gbfr.utility.modtools.Hooks.Fsm;
 
 namespace gbfr.utility.modtools;
 
@@ -79,6 +80,7 @@ public unsafe class Mod : ModBase // <= Do not Remove.
     private WeaponManagerHook _weaponManagerHook;
 
     private EffectDataHooks _effectDataHooks;
+    private DebugPrintActionHook _debugPrintActionHook;
 
     public Mod(ModContext context)
     {
@@ -145,6 +147,9 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
         _weaponManagerHook = new WeaponManagerHook(_hooks);
         _weaponManagerHook.Init(_startupScanner);
+
+        _debugPrintActionHook = new DebugPrintActionHook(_sharedScans);
+        _debugPrintActionHook.Init();
     }
 
     public void CreateImGuiWindows()
@@ -179,6 +184,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
         var camPosOverlay = new GameOverlay(_gameStateHook);
         _imguiSupport.AddWindow(camPosOverlay, "Other");
+
+        _imguiSupport.AddWindow(OverlayLogger.Instance);
 
         _imguiSupport.AddComponent("Other", new MouseControlButton(_imguiSupport));
         _imguiSupport.AddMenuSeparator("Other");
