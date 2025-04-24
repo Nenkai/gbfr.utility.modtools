@@ -147,6 +147,12 @@ public unsafe class ReflectionHooks
         relinkObjectType.InheritName = inheritName;
         relinkObjectType.ReflectionTypeInfoPtr = objectType;
 
+        RelinkObjectType baseObj = null;
+        if (!string.IsNullOrEmpty(relinkObjectType.InheritName))
+        {
+            _knownObjects.TryGetValue(relinkObjectType.InheritName, out baseObj);
+        }
+
         IAttributeList* attrList = objectType->pAttrList;
         int count = (int)(attrList->pEnd - attrList->pBegin);
         for (int i = 0; i < count; i++)
@@ -158,6 +164,9 @@ public unsafe class ReflectionHooks
                 var attrName = Marshal.PtrToStringAnsi((nint)attr->pTypeName);
                 var attrTypeName = Marshal.PtrToStringAnsi((nint)attr->pAttrName);
 
+                if (HasAttribute(baseObj, attrName))
+                    continue;
+
                 relinkObjectType.Attributes.TryAdd(attrName, new RelinkObjectAttribute(attrName, attrTypeName, attr));
             }
             else
@@ -165,11 +174,30 @@ public unsafe class ReflectionHooks
                 var attrName = Marshal.PtrToStringAnsi((nint)attr->pAttrName);
                 var attrTypeName = Marshal.PtrToStringAnsi((nint)attr->pTypeName);
 
+                if (HasAttribute(baseObj, attrName))
+                    continue;
+
                 relinkObjectType.Attributes.TryAdd(attrName, new RelinkObjectAttribute(attrName, attrTypeName, attr));
             }
         }
 
         _knownObjects.Add(objectName, relinkObjectType);
+    }
+
+    private bool HasAttribute(RelinkObjectType baseObj, string name)
+    {
+        if (baseObj is not null)
+        {
+            if (baseObj.Attributes.ContainsKey(name))
+                return true;
+
+            if (!string.IsNullOrEmpty(baseObj.InheritName) && _knownObjects.TryGetValue(baseObj.InheritName, out baseObj))
+            {
+                return HasAttribute(baseObj, name);
+            }
+        }
+
+        return false;
     }
 
     private void DumpObjectReflectionInfo(RelinkObjectType objectType)
@@ -198,8 +226,10 @@ public unsafe class ReflectionHooks
         _logger.WriteLine("{");
 
         RelinkObjectType inheritType = null;
-        if (!string.IsNullOrEmpty(objectType.InheritName) && _knownObjects.TryGetValue(objectType.InheritName, out inheritType))
-            ;
+
+        _logger.WriteLine("    [JsonIgnore]");
+        _logger.WriteLine($"    public override string ComponentName => nameof({objectType.Name});");
+        _logger.WriteLine("");
 
         foreach (KeyValuePair<string, RelinkObjectAttribute> attr in objectType.Attributes)
         {

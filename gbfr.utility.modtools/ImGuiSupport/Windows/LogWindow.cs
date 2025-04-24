@@ -64,14 +64,15 @@ public unsafe class LogWindow : IImguiWindow, IImguiMenuComponent
 
             ImGui.SameLine(0, 2);
             if (ImGui.SmallButton("Copy"))
-                ;
+                ImGui.SetClipboardText(string.Join("\n", LastLines.Select(e => e.Message)));
 
             ImGui.SameLine(0, 2);
             ImGui.Checkbox("Auto-scroll", ref _autoScroll);
 
+            ImGui.Checkbox("Enable FIle Logging", ref ImGuiConfig.LogFiles);
+
             var vecInternal = new ImVec2.__Internal();
             var vector = new ImVec2(&vecInternal); // Heap allocation
-
 
             ImGui.BeginChildEx("##log", 1234, vector, true, (int)(ImGuiWindowFlags.AlwaysVerticalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar));
 

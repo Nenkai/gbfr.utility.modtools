@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 
 using SharedScans.Interfaces;
 using Reloaded.Mod.Interfaces;
+using gbfr.utility.modtools.ImGuiSupport;
 
 
 namespace gbfr.utility.modtools.Hooks;
@@ -57,10 +58,13 @@ public unsafe class FileLogger
         {
             string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
 
-            if (result->ChunkFileStorage is null)
-                _logger.WriteLine($"open (not found): {str}");
-            else
-                _logger.WriteLine($"open (ok): {str}, size=0x{result->FileSize:X8}");
+            if (ImGuiConfig.LogFiles)
+            {
+                if (result->ChunkFileStorage is null)
+                    _logger.WriteLine($"open (not found): {str}");
+                else
+                    _logger.WriteLine($"open (ok): {str}, size=0x{result->FileSize:X8}");
+            }
         }
         
     }
@@ -69,13 +73,16 @@ public unsafe class FileLogger
     {
         var res = HOOK_FileExists.Hook.OriginalFunction(fileName);
 
-        if (fileName is not null && fileName->pStr is not null)
+        if (ImGuiConfig.LogFiles)
         {
-            string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
-            if (res == 0)
-                _logger.WriteLine($"exists (not found): {str}");
-            else
-                _logger.WriteLine($"exists (ok): {str}");
+            if (fileName is not null && fileName->pStr is not null)
+            {
+                string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
+                if (res == 0)
+                    _logger.WriteLine($"exists (not found): {str}");
+                else
+                    _logger.WriteLine($"exists (ok): {str}");
+            }
         }
         
         return res;
@@ -85,10 +92,13 @@ public unsafe class FileLogger
     {
         HOOK_OpenFile2.Hook.OriginalFunction(a1, fileName, @params, a4, a5);
 
-        if (fileName is not null && fileName->pStr is not null)
+        if (ImGuiConfig.LogFiles)
         {
-            string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
-            _logger.WriteLine($"open2: {str}");
+            if (fileName is not null && fileName->pStr is not null)
+            {
+                string str = Marshal.PtrToStringAnsi((nint)fileName->pStr);
+                _logger.WriteLine($"open2: {str}");
+            }
         }
     }
 }

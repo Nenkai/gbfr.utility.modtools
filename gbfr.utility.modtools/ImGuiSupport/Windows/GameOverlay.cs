@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using DearImguiSharp;
 
 using gbfr.utility.modtools.Hooks;
+using gbfr.utility.modtools.Hooks.Effects;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
@@ -18,9 +19,11 @@ public unsafe class GameOverlay : IImguiWindow
     private bool _open = true;
 
     private GameStateHook _gameStateHook;
-    public GameOverlay(GameStateHook gameStateHook)
+    private EventHooks _eventHooks;
+    public GameOverlay(GameStateHook gameStateHook, EventHooks eventHooks)
     {
         _gameStateHook = gameStateHook;
+        _eventHooks = eventHooks;
     }
 
     public void BeginMenuComponent()
@@ -56,6 +59,29 @@ public unsafe class GameOverlay : IImguiWindow
 
             ImGui.Text($"Last Quest ID: {*(int*)_gameStateHook.QuestIdPtr:X6}");
             ImGui.Text($"Phase ID: p{*(ushort*)_gameStateHook.PhaseIdPtr:X3}");
+
+            if (_eventHooks.EventManagerPtr != null)
+            {
+                int cnt = 0;
+                for (int i = 0; i < 8; i++)
+                {
+                    var @event = (&_eventHooks.EventManagerPtr->Events)[i];
+                    if (@event.Type == 0)
+                        break;
+
+                    cnt++;
+                }
+
+                ImGui.Text($"Events ({cnt}/8)");
+                for (int i = 0; i < 8; i++)
+                {
+                    var @event = (&_eventHooks.EventManagerPtr->Events)[i];
+                    if (@event.Type == 0)
+                        break;
+
+                    ImGui.Text($"- Event[{i}] = {@event.Type}{@event.Id:X4}");
+                }
+            }
 
             var vecInternal = new ImVec2.__Internal();
             var vector = new ImVec2(&vecInternal); // Heap allocation

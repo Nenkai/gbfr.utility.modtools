@@ -72,6 +72,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
     private GameStateHook _gameStateHook;
 
+    private EventHooks _eventHooks;
+
     private CharacterManagerHook _charManagerHook;
     private GemManagerHook _gemManagerHook;
     private ItemManagerHook _itemManagerHook;
@@ -81,6 +83,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
     private EffectDataHooks _effectDataHooks;
     private DebugPrintActionHook _debugPrintActionHook;
+
+    private IServiceProvider _services;
 
     public Mod(ModContext context)
     {
@@ -123,8 +127,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         _reflectionHooks = new ReflectionHooks(_sharedScans, _logger);
         _reflectionHooks.Init();
 
-        //_fileLogger = new FileLogger(_sharedScans, _logger);
-        //_fileLogger.Init();
+        _fileLogger = new FileLogger(_sharedScans, _logger);
+        _fileLogger.Init();
 
         _effectDataHooks = new EffectDataHooks(_sharedScans);
         _effectDataHooks.Init();
@@ -150,6 +154,9 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
         _debugPrintActionHook = new DebugPrintActionHook(_sharedScans);
         _debugPrintActionHook.Init();
+
+        _eventHooks = new EventHooks(_sharedScans);
+        _eventHooks.Init();
     }
 
     public void CreateImGuiWindows()
@@ -182,7 +189,7 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         EffectEditWindow effectEditWindow = new EffectEditWindow(_effectDataHooks);
         _imguiSupport.AddWindow(effectEditWindow, "Effects");
 
-        var camPosOverlay = new GameOverlay(_gameStateHook);
+        var camPosOverlay = new GameOverlay(_gameStateHook, _eventHooks);
         _imguiSupport.AddWindow(camPosOverlay, "Other");
 
         _imguiSupport.AddWindow(OverlayLogger.Instance);
