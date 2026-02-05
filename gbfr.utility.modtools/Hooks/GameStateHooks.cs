@@ -31,6 +31,10 @@ public unsafe class GameStateHook
     public void Init(IStartupScanner startupScanner)
     {
         // Character Pos
+        // note: this is an array of 4 vec4 for each party pos. this is set after an update iteration and likely used as quick lookup table for.. other unknown stuff
+        // it is not used for world position computations, these were already done
+        // the actual player pos for each BehaviorPlayerBase is in a ModelImpl structure for each BehaviorPlayerBase
+
         // Find: lea     rax, g_PlayerPosMaybe ([rel $0618E9B0]) - a global to cam stuff
         // (there are multiple cam pos globals though, not sure which one is actually the real value)
         startupScanner.AddMainModuleScan("48 8D 05 ?? ?? ?? ?? C4 C1 78 28 04 04", e =>
