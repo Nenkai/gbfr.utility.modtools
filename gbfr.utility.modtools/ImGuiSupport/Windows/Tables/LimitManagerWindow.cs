@@ -16,7 +16,7 @@ namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class LimitManagerWindow : TableEditorWindow
 {
-    public LimitManagerWindow(TableManagerBase tableManagerBase)
+    public LimitManagerWindow(LimitApManagerHook tableManagerBase)
         : base("LimitManager", tableManagerBase)
     {
 

@@ -16,7 +16,7 @@ namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class SkillManagerWindow : TableEditorWindow
 {
-    public SkillManagerWindow(TableManagerBase tableManagerBase)
+    public SkillManagerWindow(SkillManagerHook tableManagerBase)
         : base("SkillManager", tableManagerBase)
     {
 

@@ -16,7 +16,7 @@ namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class CharacterManagerWindow : TableEditorWindow
 {
-    public CharacterManagerWindow(TableManagerBase tableManagerBase)
+    public CharacterManagerWindow(CharacterManagerHook tableManagerBase)
         : base("CharacterManager", tableManagerBase)
     {
 

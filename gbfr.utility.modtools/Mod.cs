@@ -23,6 +23,9 @@ using gbfr.utility.modtools.Hooks.Managers;
 using gbfr.utility.modtools.Hooks.Effects;
 using gbfr.utility.modtools.Hooks.Reflection;
 using gbfr.utility.modtools.Hooks.Fsm;
+using Microsoft.Extensions.DependencyInjection;
+
+using RyoTune.Reloaded;
 
 namespace gbfr.utility.modtools;
 
@@ -62,27 +65,7 @@ public unsafe class Mod : ModBase // <= Do not Remove.
     /// </summary>
     private readonly IModConfig _modConfig;
 
-    private static IStartupScanner? _startupScanner = null!;
-    private static ISharedScans? _sharedScans = null!;
-
     private ImguiSupport _imguiSupport;
-
-    private FileLogger _fileLogger;
-    private ReflectionHooks _reflectionHooks;
-
-    private GameStateHook _gameStateHook;
-
-    private EventHooks _eventHooks;
-
-    private CharacterManagerHook _charManagerHook;
-    private GemManagerHook _gemManagerHook;
-    private ItemManagerHook _itemManagerHook;
-    private LimitApManagerHook _limitApManagerHook;
-    private SkillManagerHook _skillManagerHook;
-    private WeaponManagerHook _weaponManagerHook;
-
-    private EffectDataHooks _effectDataHooks;
-    private DebugPrintActionHook _debugPrintActionHook;
 
     private IServiceProvider _services;
 
@@ -99,102 +82,84 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         Debugger.Launch();
 #endif
 
-        var startupScannerController = _modLoader.GetController<IStartupScanner>();
-        if (startupScannerController == null || !startupScannerController.TryGetTarget(out _startupScanner))
-        {
-            return;
-        }
+        CreateServices();
+        Project.Initialize(_modConfig, _modLoader, _logger);
 
-        var sharedScansController = _modLoader.GetController<ISharedScans>();
-        if (sharedScansController == null || !sharedScansController.TryGetTarget(out _sharedScans))
-        {
-            _logger.WriteLine($"[{_modConfig.ModId}] Unable to get ISharedScans. Framework will not load!");
-            return;
-        }
-
-        _imguiSupport = new ImguiSupport(_hooks);
         _imguiSupport.SetupImgui(_modLoader.GetDirectoryForModId(_modConfig.ModId));
 
-        CreateHooks();
+        foreach (var svc in _services.GetServices<IHookBase>())
+            svc.Init();
+
         CreateImGuiWindows();
     }
 
-    private void CreateHooks()
+    private void CreateServices()
     {
-        _gameStateHook = new GameStateHook(_hooks);
-        _gameStateHook.Init(_startupScanner);
+        _imguiSupport = new ImguiSupport(_hooks);
 
-        _reflectionHooks = new ReflectionHooks(_sharedScans, _logger);
-        _reflectionHooks.Init();
+        _services = new ServiceCollection()
+            .AddSingleton(_logger)
+            .AddSingleton(_imguiSupport)
+            // Hooks
+            .AddSingletonAs<IHookBase, GameStateHook>()
+            .AddSingletonAs<IHookBase, ReflectionHooks>()
+            .AddSingletonAs<IHookBase, FileLogger>()
+            .AddSingletonAs<IHookBase, EffectDataHooks>()
+            .AddSingletonAs<IHookBase, EventHooks>()
+            .AddSingletonAs<IHookBase, EntityHooks>()
 
-        _fileLogger = new FileLogger(_sharedScans, _logger);
-        _fileLogger.Init();
+            // Hooks (tables)
+            .AddSingletonAs<IHookBase, CharacterManagerHook>()
+            .AddSingletonAs<IHookBase, GemManagerHook>()
+            .AddSingletonAs<IHookBase, ItemManagerHook>()
+            .AddSingletonAs<IHookBase, LimitApManagerHook>()
+            .AddSingletonAs<IHookBase, SkillManagerHook>()
+            .AddSingletonAs<IHookBase, WeaponManagerHook>()
 
-        _effectDataHooks = new EffectDataHooks(_sharedScans);
-        _effectDataHooks.Init();
+            // ImGui
+            .AddSingleton<LogWindow>()
+            .AddSingleton<CharacterManagerWindow>()
+            .AddSingleton<GemManagerWindow>()
+            .AddSingleton<ItemManagerWindow>()
+            .AddSingleton<LimitManagerWindow>()
+            .AddSingleton<SkillManagerWindow>()
+            .AddSingleton<WeaponManagerWindow>()
 
-        // Create hooks for windows
-        _charManagerHook = new CharacterManagerHook(_sharedScans);
-        _charManagerHook.Init();
+            .AddSingleton<EffectEditWindow>()
 
-        _gemManagerHook = new GemManagerHook(_sharedScans);
-        _gemManagerHook.Init();
+            .AddSingleton<EntitiesWindow>()
 
-        _itemManagerHook = new ItemManagerHook(_sharedScans);
-        _itemManagerHook.Init();
+            .AddSingleton<GameOverlay>()
 
-        _limitApManagerHook = new LimitApManagerHook(_hooks);
-        _limitApManagerHook.Init(_startupScanner);
-
-        _skillManagerHook = new SkillManagerHook(_hooks);
-        _skillManagerHook.Init(_startupScanner);
-
-        _weaponManagerHook = new WeaponManagerHook(_hooks);
-        _weaponManagerHook.Init(_startupScanner);
-
-        _debugPrintActionHook = new DebugPrintActionHook(_sharedScans);
-        _debugPrintActionHook.Init();
-
-        _eventHooks = new EventHooks(_sharedScans);
-        _eventHooks.Init();
+            .AddSingleton<DumpMenuButton>()
+            .AddSingleton<MouseControlButton>()
+            .BuildServiceProvider();
     }
 
     public void CreateImGuiWindows()
     {
-        LogWindow logWindow = new LogWindow(_logger);
-        _imguiSupport.AddWindow(logWindow, "Tools");
+        _imguiSupport.AddWindow(_services.GetRequiredService<LogWindow>(), "Tools");
 
         // Main menu stuff
-        _imguiSupport.AddComponent("Tools", new DumpMenuButton(_reflectionHooks));
+        _imguiSupport.AddComponent("Tools", _services.GetRequiredService<DumpMenuButton>());
 
         // Create windows
-        CharacterManagerWindow characterManagerWindow = new(_charManagerHook);
-        _imguiSupport.AddWindow(characterManagerWindow, "Managers");
+        _imguiSupport.AddWindow(_services.GetRequiredService<CharacterManagerWindow>(), "Managers");
+        _imguiSupport.AddWindow(_services.GetRequiredService<GemManagerWindow>(), "Managers");
+        _imguiSupport.AddWindow(_services.GetRequiredService<ItemManagerWindow>(), "Managers");
+        _imguiSupport.AddWindow(_services.GetRequiredService<LimitManagerWindow>(), "Managers");
+        _imguiSupport.AddWindow(_services.GetRequiredService<SkillManagerWindow>(), "Managers");
+        _imguiSupport.AddWindow(_services.GetRequiredService<WeaponManagerWindow>(), "Managers");
 
-        GemManagerWindow gemManagerWindow = new(_gemManagerHook);
-        _imguiSupport.AddWindow(gemManagerWindow, "Managers");
+        _imguiSupport.AddWindow(_services.GetRequiredService<EffectEditWindow>(), "Effects");
 
-        ItemManagerWindow itemManagerWindow = new(_itemManagerHook);
-        _imguiSupport.AddWindow(itemManagerWindow, "Managers");
+        _imguiSupport.AddWindow(_services.GetRequiredService<EntitiesWindow>(), "Entities");
 
-        LimitManagerWindow limitManagerWindow = new(_limitApManagerHook);
-        _imguiSupport.AddWindow(limitManagerWindow, "Managers");
-
-        SkillManagerWindow skillManagerWindow = new(_skillManagerHook);
-        _imguiSupport.AddWindow(skillManagerWindow, "Managers");
-
-        WeaponManagerWindow weaponManagerWindow = new(_weaponManagerHook);
-        _imguiSupport.AddWindow(weaponManagerWindow, "Managers");
-
-        EffectEditWindow effectEditWindow = new EffectEditWindow(_effectDataHooks);
-        _imguiSupport.AddWindow(effectEditWindow, "Effects");
-
-        var camPosOverlay = new GameOverlay(_gameStateHook, _eventHooks);
-        _imguiSupport.AddWindow(camPosOverlay, "Other");
+        _imguiSupport.AddWindow(_services.GetRequiredService<GameOverlay>(), "Other");
 
         _imguiSupport.AddWindow(OverlayLogger.Instance);
 
-        _imguiSupport.AddComponent("Other", new MouseControlButton(_imguiSupport));
+        _imguiSupport.AddComponent("Other", _services.GetRequiredService<MouseControlButton>());
         _imguiSupport.AddMenuSeparator("Other");
         _imguiSupport.AddWindow(new DemoWindow(), "Other");
         _imguiSupport.AddWindow(new AboutWindow(_modConfig), "Other");

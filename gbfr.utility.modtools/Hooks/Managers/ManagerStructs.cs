@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using gbfr.utility.modtools.Native;
+
 namespace gbfr.utility.modtools.Hooks.Managers;
 
 public unsafe struct CharacterManager

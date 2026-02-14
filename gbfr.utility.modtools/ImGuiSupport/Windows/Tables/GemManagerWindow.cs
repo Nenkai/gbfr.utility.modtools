@@ -16,7 +16,7 @@ namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class GemManagerWindow : TableEditorWindow
 {
-    public GemManagerWindow(TableManagerBase tableManagerBase)
+    public GemManagerWindow(GemManagerHook tableManagerBase)
         : base("GemManager", tableManagerBase)
     {
 

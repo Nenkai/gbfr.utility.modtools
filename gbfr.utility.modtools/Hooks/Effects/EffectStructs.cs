@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using gbfr.utility.modtools;
+using gbfr.utility.modtools.Native;
 
 namespace gbfr.utility.modtools.Hooks.Effects;
 

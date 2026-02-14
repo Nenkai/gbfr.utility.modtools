@@ -16,7 +16,7 @@ namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class ItemManagerWindow : TableEditorWindow
 {
-    public ItemManagerWindow(TableManagerBase tableManagerBase)
+    public ItemManagerWindow(ItemManagerHook tableManagerBase)
         : base("ItemManager", tableManagerBase)
     {
 

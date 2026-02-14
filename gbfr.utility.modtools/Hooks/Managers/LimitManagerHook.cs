@@ -1,41 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
+
+using RyoTune.Reloaded;
 
 using Reloaded.Hooks.Definitions;
-using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 
 namespace gbfr.utility.modtools.Hooks.Managers;
 
 public unsafe class LimitApManagerHook : TableManagerBase
 {
-    private IReloadedHooks _hooks;
-
     private delegate void LimitManagerLoad(LimitManager* this_);
     private IHook<LimitManagerLoad> _limitManagerLoadHook;
 
-    public LimitApManagerHook(IReloadedHooks hooks)
+    public LimitApManagerHook()
     {
-        _hooks = hooks;
+
     }
 
-    public void Init(IStartupScanner startupScanner)
+    public override void Init()
     {
-        startupScanner.AddMainModuleScan("55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ?? ?? ?? ?? 48 8D AC 24 ?? ?? ?? ?? C5 78 29 4D ?? C5 78 29 45 " +
-            "?? C5 F8 29 7D ?? C5 F8 29 75 ?? 48 C7 45 ?? ?? ?? ?? ?? 48 89 CB C5 F8 57 C0 C5 F8 11 05 ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? 48 C7 05 ?? ?? " +
-            "?? ?? ?? ?? ?? ?? 48 85 C9 74 ?? 48 8B 01 FF 50 ?? 48 8D 05 ?? ?? ?? ?? 48 89 45 ?? 48 C7 45 ?? ?? ?? ?? ?? 48 8D 4D ?? 48 8D 55 ?? E8 ?? " +
-            "?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 8B 4D ?? 48 89 0D ?? ?? ?? ?? C5 F8 10 45 ?? C5 F8 11 05 ?? ?? ?? ?? 48 85 C0 74 ?? 48 8B 10 48 89 C1 FF " +
-            "52 ?? 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 ?? 48 8B 01 FF 50 ?? 4C 8B 25", e =>
-        {
-            if (!e.Found)
-                return;
-
-            var addr = Process.GetCurrentProcess().MainModule.BaseAddress + e.Offset;
-            _limitManagerLoadHook = _hooks.CreateHook<LimitManagerLoad>(LimitManagerLoadImpl, addr).Activate();
-        });
+        Project.Scans.AddScanHook(nameof(LimitManagerLoad), (result, hooks)
+            => _limitManagerLoadHook = hooks.CreateHook<LimitManagerLoad>(LimitManagerLoadImpl, result).Activate());
     }
 
     public void LimitManagerLoadImpl(LimitManager* this_)

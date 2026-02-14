@@ -1,52 +1,35 @@
-﻿using Reloaded.Hooks.Definitions;
-using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
-using GBFRDataTools.Database;
-using GBFRDataTools.Database.Entities;
-using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
-using SharedScans.Interfaces;
+using Reloaded.Hooks.Definitions;
+
+using RyoTune.Reloaded;
 
 namespace gbfr.utility.modtools.Hooks.Managers;
 
 public unsafe class ItemManagerHook : TableManagerBase
 {
-    private ISharedScans _scans;
-
     public delegate void ItemManagerLoad(ItemManager* this_);
-    public HookContainer<ItemManagerLoad> HOOK_ItemManagerLoad { get; private set; }
+    public IHook<ItemManagerLoad> HOOK_ItemManagerLoad { get; private set; }
 
-    public ItemManagerHook(ISharedScans scans)
+    public ItemManagerHook()
     {
-        _scans = scans;
+
     }
 
-    public Dictionary<string, string> Patterns = new()
+    public override void Init()
     {
-        [nameof(ItemManagerLoad)] = "55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ?? ?? ?? ?? 48 8D AC 24 ?? ?? ?? ?? C5 78 29 4D ?? C5 " +
-            "78 29 45 ?? C5 F8 29 7D ?? C5 F8 29 75 ?? 48 C7 45 ?? ?? ?? ?? ?? 48 89 CB C5 F8 57 C0 C5 F8 11 05 ?? ?? ?? ?? 48 8B 0D ?? ?? ?? " +
-            "?? 48 C7 05 ?? ?? ?? ?? ?? ?? ?? ?? 48 85 C9 74 ?? 48 8B 01 FF 50 ?? 48 8D 05 ?? ?? ?? ?? 48 89 45 ?? 48 C7 45 ?? ?? ?? ?? ?? " +
-            "48 8D 4D ?? 48 8D 55 ?? E8 ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 8B 4D ?? 48 89 0D ?? ?? ?? ?? C5 F8 10 45 ?? C5 F8 11 05 ?? ?? " +
-            "?? ?? 48 85 C0 74 ?? 48 8B 10 48 89 C1 FF 52 ?? 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 ?? 48 8B 01 FF 50 ?? 48 8B 35",
-    };
-
-    public void Init()
-    {
-        foreach (var pattern in Patterns)
-            _scans.AddScan(pattern.Key, pattern.Value);
-
-        HOOK_ItemManagerLoad = _scans.CreateHook<ItemManagerLoad>(ItemManagerLoadImpl, "a");
+        Project.Scans.AddScanHook(nameof(ItemManagerLoad), (result, hooks)
+            => HOOK_ItemManagerLoad = hooks.CreateHook<ItemManagerLoad>(ItemManagerLoadImpl, result).Activate());
     }
 
     public void ItemManagerLoadImpl(ItemManager* this_)
     {
-        HOOK_ItemManagerLoad.Hook.OriginalFunction(this_);
+        HOOK_ItemManagerLoad.OriginalFunction(this_);
 
         AddTableMap("item", &this_->Item); // unordered_map<cyan::string_hash32, table::ItemData>
         AddTableMap("item_category", &this_->ItemCategory); // unordered_map<int, table::ItemCategoryData>

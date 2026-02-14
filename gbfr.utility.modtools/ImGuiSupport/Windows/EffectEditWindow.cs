@@ -28,7 +28,7 @@ public unsafe class EffectEditWindow : IImguiWindow, IImguiMenuComponent
 
     public void BeginMenuComponent()
     {
-        if (ImGui.MenuItemEx("About Window", "", "", false, true))
+        if (ImGui.MenuItemEx("Loaded Effects", "", "", false, true))
         {
             IsOpen = true;
         }

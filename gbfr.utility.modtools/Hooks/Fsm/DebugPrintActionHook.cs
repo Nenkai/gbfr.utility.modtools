@@ -1,40 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-using SharedScans.Interfaces;
+using RyoTune.Reloaded;
+
+using static gbfr.utility.modtools.Hooks.Managers.CharacterManagerHook;
 
 using gbfr.utility.modtools.Hooks.Managers;
 using gbfr.utility.modtools.ImGuiSupport;
-using System.Runtime.InteropServices;
+
+using Reloaded.Hooks.Definitions;
 
 namespace gbfr.utility.modtools.Hooks.Fsm;
 
-public unsafe class DebugPrintActionHook
+public unsafe class DebugPrintActionHook : IHookBase
 {
-    private ISharedScans _scans;
-
     public delegate void DebugPrintAction_Execute(DebugPrintAction* this_);
-    private HookContainer<DebugPrintAction_Execute> HOOK_DebugPrintAction_Execute;
+    private IHook<DebugPrintAction_Execute> HOOK_DebugPrintAction_Execute;
 
-    public Dictionary<string, string> Patterns = new()
+    public DebugPrintActionHook()
     {
-        [nameof(DebugPrintAction_Execute)] = "83 79 ?? ?? 74 ?? C3 83 79",
-    };
 
-    public DebugPrintActionHook(ISharedScans scans)
-    {
-        _scans = scans;
     }
 
     public void Init()
     {
-        foreach (var pattern in Patterns)
-            _scans.AddScan(pattern.Key, pattern.Value);
+        Project.Scans.AddScanHook(nameof(DebugPrintAction_Execute), (result, hooks)
+            => HOOK_DebugPrintAction_Execute = hooks.CreateHook<DebugPrintAction_Execute>(DebugPrintAction_ExecuteImpl, result).Activate());
 
-        HOOK_DebugPrintAction_Execute = _scans.CreateHook<DebugPrintAction_Execute>(DebugPrintAction_ExecuteImpl, "a");
     }
 
     public void DebugPrintAction_ExecuteImpl(DebugPrintAction* this_)

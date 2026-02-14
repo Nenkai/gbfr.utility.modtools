@@ -16,7 +16,7 @@ namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class WeaponManagerWindow : TableEditorWindow
 {
-    public WeaponManagerWindow(TableManagerBase tableManagerBase)
+    public WeaponManagerWindow(WeaponManagerHook tableManagerBase)
         : base("WeaponManager", tableManagerBase)
     {
 

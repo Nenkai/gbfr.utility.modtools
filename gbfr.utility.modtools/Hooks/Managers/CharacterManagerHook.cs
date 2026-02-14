@@ -1,50 +1,39 @@
-﻿using Reloaded.Hooks.Definitions;
-using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
-using GBFRDataTools.Database;
-using GBFRDataTools.Database.Entities;
 using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
-using SharedScans.Interfaces;
+
+using Reloaded.Hooks.Definitions;
+
+using RyoTune.Reloaded;
 
 namespace gbfr.utility.modtools.Hooks.Managers;
 
 public unsafe class CharacterManagerHook : TableManagerBase
 {
-    private ISharedScans _scans;
-
     public delegate void CharacterManagerLoad(CharacterManager* this_);
-    public HookContainer<CharacterManagerLoad> HOOK_CharacterManagerLoad { get; private set; }
+    public IHook<CharacterManagerLoad> HOOK_CharacterManagerLoad { get; private set; }
 
     private CharacterManagerWindow _characterManagerWindow;
 
-    public Dictionary<string, string> Patterns = new()
+    public CharacterManagerHook()
     {
-        [nameof(CharacterManagerLoad)] = "55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ?? ?? ?? ?? 48 8D AC 24 ?? ?? ?? ?? C5 78 29 8D ?? ?? ?? ?? C5 78 29 45 ?? C5 F8 29 7D ?? C5 F8 29 75 ?? 48 C7 45 ?? ?? ?? ?? ?? 48 89 CB",
-    };
 
-    public CharacterManagerHook(ISharedScans scans)
-    {
-        _scans = scans;
     }
 
-    public void Init()
+    public override void Init()
     {
-        foreach (var pattern in Patterns)
-            _scans.AddScan(pattern.Key, pattern.Value);
-
-        HOOK_CharacterManagerLoad = _scans.CreateHook<CharacterManagerLoad>(CharacterManagerLoadImpl, "a");
+        Project.Scans.AddScanHook(nameof(CharacterManagerLoad), (result, hooks)
+            => HOOK_CharacterManagerLoad = hooks.CreateHook<CharacterManagerLoad>(CharacterManagerLoadImpl, result).Activate());
     }
 
     public void CharacterManagerLoadImpl(CharacterManager* this_)
     {
-        HOOK_CharacterManagerLoad.Hook.OriginalFunction(this_);
+        HOOK_CharacterManagerLoad.OriginalFunction(this_);
 
         AddTableMap("chara", &this_->Chara); // unordered_map<cyan::string_hash32, table::CharaData>
         AddTableMap("chara_costume", &this_->CharaCostume, isVectorMap: true); // unordered_map<cyan::string_hash32, vector<table::CharaCostumeData>>

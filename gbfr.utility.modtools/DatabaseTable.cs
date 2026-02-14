@@ -1,4 +1,6 @@
-﻿using GBFRDataTools.Database.Entities;
+﻿using gbfr.utility.modtools.Native;
+
+using GBFRDataTools.Database.Entities;
 
 using System;
 using System.Collections.Generic;

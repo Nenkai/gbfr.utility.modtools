@@ -2,7 +2,7 @@
   "ModId": "gbfr.utility.modtools",
   "ModName": "Relink Modding Tools / Overlay",
   "ModAuthor": "Nenkai",
-  "ModVersion": "1.0.0",
+  "ModVersion": "1.1.0",
   "ModDescription": "Modding Tools Overlay for Granblue Fantasy: Relink",
   "ModDll": "gbfr.utility.modtools.dll",
   "ModIcon": "Preview.png",

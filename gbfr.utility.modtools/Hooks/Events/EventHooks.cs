@@ -4,45 +4,36 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-using Reloaded.Mod.Interfaces;
+using RyoTune.Reloaded;
+using Reloaded.Hooks.Definitions;
 
-using SharedScans.Interfaces;
-
+using static gbfr.utility.modtools.Hooks.Effects.EffectDataHooks;
 
 namespace gbfr.utility.modtools.Hooks.Effects;
 
-public unsafe class EventHooks
+public unsafe class EventHooks : IHookBase
 {
-    private readonly ISharedScans _scans;
-
     public unsafe delegate nint Event_Unk(EventManager* this_);
-    public static HookContainer<Event_Unk> HOOK_EventUnk { get; private set; }
+    public static IHook<Event_Unk> HOOK_EventUnk { get; private set; }
 
     public EventManager* EventManagerPtr;
 
-    public Dictionary<string, string> Patterns = new()
+    public EventHooks()
     {
-        [nameof(Event_Unk)] = "55 41 57 41 56 56 57 53 48 83 EC ?? 48 8D 6C 24 ?? 48 C7 45 ?? ?? ?? ?? ?? 48 89 CE C7 01",
-    };
 
-    public EventHooks(ISharedScans scans)
-    {
-        _scans = scans;
     }
 
     public void Init()
     {
-        foreach (var pattern in Patterns)
-            _scans.AddScan(pattern.Key, pattern.Value);
-
         // Maps the bxm file, open the est buffers
-        HOOK_EventUnk = _scans.CreateHook<Event_Unk>(HOOK_EventUnkImpl, "a");
+        Project.Scans.AddScanHook(nameof(Event_Unk), (result, hooks)
+            => HOOK_EventUnk = hooks.CreateHook<Event_Unk>(HOOK_EventUnkImpl, result).Activate());
     }
 
     public nint HOOK_EventUnkImpl(EventManager* this_)
     {
         EventManagerPtr = this_;
-        return HOOK_EventUnk.Hook.OriginalFunction(this_);
+        return HOOK_EventUnk.OriginalFunction(this_);
     }
 }
 

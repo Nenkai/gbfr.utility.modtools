@@ -1,54 +1,49 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Concurrent.Extended;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
+using gbfr.utility.modtools.Native;
+
+using Reloaded.Hooks.Definitions;
 using Reloaded.Mod.Interfaces;
 
-using SharedScans.Interfaces;
+using RyoTune.Reloaded;
 
-using System.Collections.Concurrent.Extended;
+
+using static gbfr.utility.modtools.Hooks.Managers.CharacterManagerHook;
 
 namespace gbfr.utility.modtools.Hooks.Effects;
 
-public unsafe class EffectDataHooks
+public unsafe class EffectDataHooks : IHookBase
 {
-    private readonly ISharedScans _scans;
-
     public unsafe delegate short asset__EffectDataImpl__OpenXmlFile(EffectDataImpl* this_);
-    public static WrapperContainer<asset__EffectDataImpl__OpenXmlFile> WRAPPER_asset__EffectDataImpl__Load { get; private set; }
+    public static asset__EffectDataImpl__OpenXmlFile WRAPPER_asset__EffectDataImpl__Load { get; private set; }
 
     public unsafe delegate void asset__EffectData__ReadXmlAndOpenEsts(void* this_, void* a2);
-    public static HookContainer<asset__EffectData__ReadXmlAndOpenEsts> HOOK_asset__EffectData__ReadXmlAndMapEsts { get; private set; }
+    public static IHook<asset__EffectData__ReadXmlAndOpenEsts> HOOK_asset__EffectData__ReadXmlAndMapEsts { get; private set; }
 
     public unsafe delegate bool asset__EffectData__Destructor(EffectData* this_);
-    public static HookContainer<asset__EffectData__Destructor> HOOK_asset__EffectData__Destructor { get; private set; }
+    public static IHook<asset__EffectData__Destructor> HOOK_asset__EffectData__Destructor { get; private set; }
 
     public ConcurrentSortedDictionary<string, EffectSet> EffectSets { get; } = [];
 
-    public Dictionary<string, string> Patterns = new()
+    public EffectDataHooks()
     {
-        [nameof(asset__EffectDataImpl__OpenXmlFile)] = "55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ?? ?? ?? ?? 48 8D AC 24 ?? ?? ?? ?? 48 83 E4 ?? 48 89 E3 48 89 AB ?? ?? ?? ?? 48 C7 85 ?? ?? ?? ?? ?? ?? ?? ?? 49 89 CC 8B 41",
-        [nameof(asset__EffectData__ReadXmlAndOpenEsts)] = "55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ?? ?? ?? ?? 48 8D AC 24 ?? ?? ?? ?? C5 F8 29 BD ?? ?? ?? ?? C5 F8 29 B5 ?? ?? ?? ?? 48 83 E4 ?? 48 89 E3 48 89 AB ?? ?? ?? ?? 48 C7 85 ?? ?? ?? ?? ?? ?? ?? ?? 83 3A",
-        [nameof(asset__EffectData__Destructor)] = "41 57 41 56 41 55 41 54 56 57 53 48 83 EC ?? F6 41"
-    };
 
-    public EffectDataHooks(ISharedScans scans)
-    {
-        _scans = scans;
     }
 
     public void Init()
     {
-        foreach (var pattern in Patterns)
-            _scans.AddScan(pattern.Key, pattern.Value);
-
         // We hook this because character object params are created separately.
-        WRAPPER_asset__EffectDataImpl__Load = _scans.CreateWrapper<asset__EffectDataImpl__OpenXmlFile>("a");
+        Project.Scans.AddScanHook(nameof(asset__EffectDataImpl__OpenXmlFile), (result, hooks)
+            => WRAPPER_asset__EffectDataImpl__Load = hooks.CreateWrapper<asset__EffectDataImpl__OpenXmlFile>(result, out _));
 
         // Maps the bxm file, open the est buffers
-        HOOK_asset__EffectData__ReadXmlAndMapEsts = _scans.CreateHook<asset__EffectData__ReadXmlAndOpenEsts>(asset__EffectData__ReadXmlAndOpenEstsImpl, "a");
+        Project.Scans.AddScanHook(nameof(asset__EffectData__ReadXmlAndOpenEsts), (result, hooks)
+            => HOOK_asset__EffectData__ReadXmlAndMapEsts = hooks.CreateHook<asset__EffectData__ReadXmlAndOpenEsts>(asset__EffectData__ReadXmlAndOpenEstsImpl, result).Activate());
 
         // To keep track of unloaded effects
         // NOTE: Removed because the dtor always seems to be called. It seems the Ests are probably passed to another structure.
@@ -66,12 +61,12 @@ public unsafe class EffectDataHooks
             Console.WriteLine($"Unloaded EffectData for '{name}'");
         }
 
-        return HOOK_asset__EffectData__Destructor.Hook.OriginalFunction(this_);
+        return HOOK_asset__EffectData__Destructor.OriginalFunction(this_);
     }
 
     public void asset__EffectData__ReadXmlAndOpenEstsImpl(void* this_, void* a2)
     {
-        HOOK_asset__EffectData__ReadXmlAndMapEsts.Hook.OriginalFunction(this_, a2);
+        HOOK_asset__EffectData__ReadXmlAndMapEsts.OriginalFunction(this_, a2);
 
         EffectData* effectData = (EffectData*)*(ulong*)this_;
         EffectDataImpl* effectImpl = &effectData->Impl;

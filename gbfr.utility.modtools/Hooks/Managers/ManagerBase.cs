@@ -8,11 +8,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+
+using gbfr.utility.modtools.Native;
 namespace gbfr.utility.modtools.Hooks.Managers;
 
-public class TableManagerBase
+public abstract class TableManagerBase : IHookBase
 {
     public List<DatabaseTable> Tables { get; set; } = [];
+
+    public abstract void Init();
 
     public unsafe void AddTableMap(string name, StdUnorderedMap* rows, bool isVectorMap = false)
     {

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gbfr.utility.modtools.Hooks
+namespace gbfr.utility.modtools.Hooks;
+
+public interface IHookBase
 {
-    internal class HookBase
-    {
-    }
+    public void Init();
 }
