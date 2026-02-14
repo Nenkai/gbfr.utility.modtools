@@ -22,6 +22,7 @@ public unsafe class EntitiesWindow : IImguiWindow, IImguiMenuComponent
     public bool IsOpen = false;
 
     private bool _showHateParams = false;
+    private bool _showTargetHateParams = false;
 
     private EntityHooks _entityHooks;
 
@@ -32,24 +33,24 @@ public unsafe class EntitiesWindow : IImguiWindow, IImguiMenuComponent
 
     public Dictionary<ulong, string> HateParamNames = new()
     {
-        [0x24A0FD4D33968F07] = "AttackHateClose - hateRateClosePlayer_",
-        [0xA90504BAF52F01A5u] = "AttackHateFar - hateRateFarPlayer_",
-        [0xC22A8882B0DBAA68u] = "AttackHateClosePerSec - hateRateClosePlayerPerSec_",
-        [0x216458528ADF1013] = "AttackHateFarPerSec - hateRateFarPlayerPerSec_",
-        [0x7EFAB85DFA46128F] = "AttackHateFront - hateRateFrontAngle_",
-        [0x2EE90B3899F1F1C] = "AttackHateBack - hateRateBackAngle_",
-        [0xA18BFDA170EAD1A7u] = "AttackHateDamage - hateRateDamage_",
-        [0xD9CCA257AEDA9D2] = "AttackHateLowHp - hateRateLowHpPlayer_",
-        [0xE11A8EEB4277BEE9u] = "AttackHateHighHp - hateRateHighHpPlayer_",
-        [0x1A89C1E9C30E9625] = "AttackHateManualPlayer - hateRateManualPlayer_",
-        [0xEE6BF56811C47336u] = "AttackHateHelpPlayer - hateRateHelpPlayer_",
-        [0x31DD2B4D5DF84A4] = "AttackHateSlowAilment - buff or debuff unk id 10?",
-        [0x376DD6D8EECFFBC1] = "AttackHateFrozenAilment - buff or debuff unk id 11?",
-        [0x7E7BA7A132DDB652] = "AttackHateProvocationAilment - ?",
-        [0xBBFE81B7949AC823u] = "AttackHateFirstTarget - hateRateFirstTargetPlayer_",
-        [0x29F6DF02F321174F] = "AttackHateLastTarget - hateRateLastTargetPlayer_",
-        [0x8C1098397095FCCBu] = "AttackHateManyTarget - hateRateTargetCountManyPlayer_",
-        [0x1F39A2DCD44D0B2E] = "AttackHateFewTarget - hateRateTargetCountFewPlayer_",
+        [0x24A0FD4D33968F07] = "AttackHateClose", // - hateRateClosePlayer_",
+        [0xA90504BAF52F01A5u] = "AttackHateFar", //  - hateRateFarPlayer_",
+        [0xC22A8882B0DBAA68u] = "AttackHateClosePerSec", //  - hateRateClosePlayerPerSec_",
+        [0x216458528ADF1013] = "AttackHateFarPerSec", //  - hateRateFarPlayerPerSec_",
+        [0x7EFAB85DFA46128F] = "AttackHateFront", //  - hateRateFrontAngle_",
+        [0x2EE90B3899F1F1C] = "AttackHateBack", //  - hateRateBackAngle_",
+        [0xA18BFDA170EAD1A7u] = "AttackHateDamage", //  - hateRateDamage_",
+        [0xD9CCA257AEDA9D2] = "AttackHateLowHp", //  - hateRateLowHpPlayer_",
+        [0xE11A8EEB4277BEE9u] = "AttackHateHighHp", //  - hateRateHighHpPlayer_",
+        [0x1A89C1E9C30E9625] = "AttackHateManualPlayer", //  - hateRateManualPlayer_",
+        [0xEE6BF56811C47336u] = "AttackHateHelpPlayer", //  - hateRateHelpPlayer_",
+        [0x31DD2B4D5DF84A4] = "AttackHateSlowAilment", //  - buff or debuff unk id 10?",
+        [0x376DD6D8EECFFBC1] = "AttackHateFrozenAilment", //  - buff or debuff unk id 11?",
+        [0x7E7BA7A132DDB652] = "AttackHateProvocationAilment", //  - ?",
+        [0xBBFE81B7949AC823u] = "AttackHateFirstTarget", //  - hateRateFirstTargetPlayer_",
+        [0x29F6DF02F321174F] = "AttackHateLastTarget", //  - hateRateLastTargetPlayer_",
+        [0x8C1098397095FCCBu] = "AttackHateManyTarget", //  - hateRateTargetCountManyPlayer_",
+        [0x1F39A2DCD44D0B2E] = "AttackHateFewTarget", //  - hateRateTargetCountFewPlayer_",
     };
 
     public void BeginMenuComponent()
@@ -73,6 +74,7 @@ public unsafe class EntitiesWindow : IImguiWindow, IImguiMenuComponent
                 return;
 
             ImGui.Checkbox("Show Enemy Hate Params", ref _showHateParams);
+            ImGui.Checkbox("Show Targets Hate Params", ref _showTargetHateParams);
 
             Span<EntityRef> entries = _entityHooks.LoadedEntitiesPtr->AsSpan();
             for (int i = *(int*)_entityHooks.EnemyStartIndexPtr; i < entries.Length; i++)
@@ -132,12 +134,30 @@ public unsafe class EntitiesWindow : IImguiWindow, IImguiMenuComponent
                 {
                     ref AttackTargetPlayerEntry attackTargetEntry = ref span[j];
                     AttackTargetPlayer* attackTarget = attackTargetEntry.AttackTarget;
-                    if (attackTarget is not null)
+                    if (attackTarget is not null && enemyAttackTarget->Target.EntityRefPtr is not null)
                     {
                         if (enemyAttackTarget->Target.EntityRefPtr->EntityObjPtr == attackTarget->TargettingPlayer.EntityRefPtr->EntityObjPtr)
                             ImGui.BulletText($"=> {j} ({attackTarget->TargettingPlayer.EntityRefPtr->EntityObjPtr->GetName()}) - last targetted index: {attackTarget->LastTargettedIndex} - hate: {attackTarget->WeightMultiplier}");
                         else
                             ImGui.BulletText($"{j} ({attackTarget->TargettingPlayer.EntityRefPtr->EntityObjPtr->GetName()}) - last targetted index: {attackTarget->LastTargettedIndex} - hate: {attackTarget->WeightMultiplier}");
+
+                        if (_showTargetHateParams)
+                        {
+                            ImGui.Indent(12);
+
+                            var node = attackTarget->HateParams.List.Node->Next;
+                            for (int k = 0; k < attackTarget->HateParams.Size(); k++)
+                            {
+                                UnkHateParamWrapper* data = (UnkHateParamWrapper*)&(node->Data);
+                                AttackHateBase* attackHate = data->AttackHate;
+                                if (HateParamNames.TryGetValue(node->Key, out string paramName))
+                                    ImGui.BulletText($"{paramName} = {attackHate->Param.Value}");
+                                else
+                                    ImGui.BulletText($"0x{node->Key:X8} = {attackHate->Param.Value}");
+                                node = node->Next;
+                            }
+                            ImGui.Unindent(12);
+                        }
                     }
                 }
             }
@@ -148,4 +168,29 @@ public unsafe class EntitiesWindow : IImguiWindow, IImguiMenuComponent
 
         }
     }
+}
+
+public unsafe struct UnkHateParamWrapper
+{
+    public nint __vftable;
+    public float Field_0x08;
+    public float Field_0x0C;
+    public nint Field_0x10;
+
+    public AttackHateBase* AttackHate;
+}
+
+public struct AttackHateBase
+{
+    public nint __vftable;
+    public EntityRef EnemyTarget;
+    public EntityRef PlayerEntity;
+    public nint UnkVTable;
+    public AttackHateParam Param;
+}
+
+public struct AttackHateParam
+{
+    public nint __vftable; // Deleter vtable?
+    public float Value;
 }

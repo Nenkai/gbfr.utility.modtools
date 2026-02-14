@@ -96,34 +96,6 @@ public unsafe struct ExEmAttackTarget
     public int field_A8;
     public int field_AC;
     public nint field_B0;
-
-    public unsafe struct StdListNodeHash64 // _List_node
-    {
-        public StdListNodeHash64* Next;
-        public StdListNodeHash64* Previous;
-        public ulong Key;
-        public void* Data; // Starting from here is data. Type is templated, it could be anything else inline to this struct i.e a std::vector
-    }
-
-    // https://github.com/microsoft/STL/blob/881bcadeca4ae9240a132588d9ac983e7b24dbe0/stl/inc/list#L755
-    public unsafe struct StdListHash64 // std::list
-    {
-        public StdListNodeHash64* Node;
-        public uint Size;
-    }
-
-    // https://github.com/microsoft/STL/blob/881bcadeca4ae9240a132588d9ac983e7b24dbe0/stl/inc/xhash#L1960
-    public unsafe struct StdUnorderedMapHash64
-    {
-        public ulong LoadFactor;
-        public StdListHash64 List;
-        public StdVector Vec;
-        public ulong Mask;
-        public ulong MaskIdx;
-
-        public readonly uint Size() => List.Size;
-        public StdListNodeHash64* Begin() => List.Node->Next;
-    };
 }
 
 public unsafe struct AttackTargetPlayerEntry
@@ -140,13 +112,7 @@ public unsafe struct AttackTargetPlayer
     public nint __vftable;
     public EntityRef ThisEnemy;
     public EntityRef TargettingPlayer;
-    public nint qword38;
-    public nint qword40;
-    public nint qword48;
-    public nint qword50;
-    public fixed byte gap58[16];
-    public nint qword68;
-    public nint qword70;
+    public StdUnorderedMapHash64 HateParams;
     public float WeightMultiplier;
     public int LastTargettedIndex;
 };
@@ -229,3 +195,34 @@ public unsafe struct cObj_vtable
     public delegate* unmanaged[Cdecl]<cObj*, nint, nint> GetName;
 }
 
+
+
+// Stl map 64 bit key
+
+public unsafe struct StdListNodeHash64 // _List_node
+{
+    public StdListNodeHash64* Next;
+    public StdListNodeHash64* Previous;
+    public ulong Key;
+    public void* Data; // Starting from here is data. Type is templated, it could be anything else inline to this struct i.e a std::vector
+}
+
+// https://github.com/microsoft/STL/blob/881bcadeca4ae9240a132588d9ac983e7b24dbe0/stl/inc/list#L755
+public unsafe struct StdListHash64 // std::list
+{
+    public StdListNodeHash64* Node;
+    public uint Size;
+}
+
+// https://github.com/microsoft/STL/blob/881bcadeca4ae9240a132588d9ac983e7b24dbe0/stl/inc/xhash#L1960
+public unsafe struct StdUnorderedMapHash64
+{
+    public ulong LoadFactor;
+    public StdListHash64 List;
+    public StdVector Vec;
+    public ulong Mask;
+    public ulong MaskIdx;
+
+    public readonly uint Size() => List.Size;
+    public StdListNodeHash64* Begin() => List.Node->Next;
+};
