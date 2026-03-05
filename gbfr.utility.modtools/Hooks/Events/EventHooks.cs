@@ -5,11 +5,10 @@ using System.Linq;
 using System.Runtime.InteropServices;
 
 using RyoTune.Reloaded;
+
 using Reloaded.Hooks.Definitions;
 
-using static gbfr.utility.modtools.Hooks.Effects.EffectDataHooks;
-
-namespace gbfr.utility.modtools.Hooks.Effects;
+namespace gbfr.utility.modtools.Hooks.Events;
 
 public unsafe class EventHooks : IHookBase
 {
@@ -25,7 +24,6 @@ public unsafe class EventHooks : IHookBase
 
     public void Init()
     {
-        // Maps the bxm file, open the est buffers
         Project.Scans.AddScanHook(nameof(Event_Unk), (result, hooks)
             => HOOK_EventUnk = hooks.CreateHook<Event_Unk>(HOOK_EventUnkImpl, result).Activate());
     }

@@ -9,7 +9,7 @@ using RyoTune.Reloaded;
 
 using Reloaded.Hooks.Definitions;
 
-namespace gbfr.utility.modtools.Hooks.Managers;
+namespace gbfr.utility.modtools.Hooks.Tables;
 
 public unsafe class LimitApManagerHook : TableManagerBase
 {

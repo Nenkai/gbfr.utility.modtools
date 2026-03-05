@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using DearImguiSharp;
 
 using gbfr.utility.modtools.Hooks;
-using gbfr.utility.modtools.Hooks.Effects;
+using gbfr.utility.modtools.Hooks.Events;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 

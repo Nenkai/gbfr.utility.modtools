@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using gbfr.utility.modtools.Native;
 
-namespace gbfr.utility.modtools.Hooks.Managers;
+namespace gbfr.utility.modtools.Hooks.Tables;
 
 public unsafe struct CharacterManager
 {

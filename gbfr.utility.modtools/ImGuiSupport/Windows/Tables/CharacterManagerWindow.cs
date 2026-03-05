@@ -6,11 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-using DearImguiSharp;
-
-using GBFRDataTools.Database;
-using GBFRDataTools.Database.Entities;
-using gbfr.utility.modtools.Hooks.Managers;
+using gbfr.utility.modtools.Hooks.Tables;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 

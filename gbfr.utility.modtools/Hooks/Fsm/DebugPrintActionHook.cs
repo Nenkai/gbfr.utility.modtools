@@ -7,9 +7,6 @@ using System.Threading.Tasks;
 
 using RyoTune.Reloaded;
 
-using static gbfr.utility.modtools.Hooks.Managers.CharacterManagerHook;
-
-using gbfr.utility.modtools.Hooks.Managers;
 using gbfr.utility.modtools.ImGuiSupport;
 
 using Reloaded.Hooks.Definitions;

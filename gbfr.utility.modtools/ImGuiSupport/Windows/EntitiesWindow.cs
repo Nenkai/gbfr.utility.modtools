@@ -1,6 +1,6 @@
 ﻿using DearImguiSharp;
 
-using gbfr.utility.modtools.Hooks;
+using gbfr.utility.modtools.Hooks.Behavior;
 
 using Reloaded.Mod.Interfaces;
 

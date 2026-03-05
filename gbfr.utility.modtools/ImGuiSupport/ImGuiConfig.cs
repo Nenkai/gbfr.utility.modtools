@@ -8,5 +8,5 @@ namespace gbfr.utility.modtools.ImGuiSupport;
 
 public static class ImGuiConfig
 {
-    public static bool LogFiles = true;
+    public static bool LogFiles = false;
 }

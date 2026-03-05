@@ -10,7 +10,8 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 
 using gbfr.utility.modtools.Native;
-namespace gbfr.utility.modtools.Hooks.Managers;
+
+namespace gbfr.utility.modtools.Hooks.Tables;
 
 public abstract class TableManagerBase : IHookBase
 {

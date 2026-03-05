@@ -19,13 +19,15 @@ using gbfr.utility.modtools.ImGuiSupport.MenuButtons;
 using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 using gbfr.utility.modtools.ImGuiSupport;
 using SharedScans.Interfaces;
-using gbfr.utility.modtools.Hooks.Managers;
+using gbfr.utility.modtools.Hooks.Tables;
 using gbfr.utility.modtools.Hooks.Effects;
 using gbfr.utility.modtools.Hooks.Reflection;
 using gbfr.utility.modtools.Hooks.Fsm;
 using Microsoft.Extensions.DependencyInjection;
 
 using RyoTune.Reloaded;
+using gbfr.utility.modtools.Hooks.Events;
+using gbfr.utility.modtools.Hooks.Behavior;
 
 namespace gbfr.utility.modtools;
 
@@ -107,6 +109,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
             .AddSingletonAs<IHookBase, EffectDataHooks>()
             .AddSingletonAs<IHookBase, EventHooks>()
             .AddSingletonAs<IHookBase, EntityHooks>()
+            .AddSingletonAs<IHookBase, TeleportHooks>()
+            .AddSingletonAs<IHookBase, BehaviorFactoryHooks>()
 
             // Hooks (tables)
             .AddSingletonAs<IHookBase, CharacterManagerHook>()
@@ -126,8 +130,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
             .AddSingleton<WeaponManagerWindow>()
 
             .AddSingleton<EffectEditWindow>()
-
             .AddSingleton<EntitiesWindow>()
+            .AddSingleton<TeleportPhaseEditWindow>()
 
             .AddSingleton<GameOverlay>()
 
@@ -154,6 +158,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         _imguiSupport.AddWindow(_services.GetRequiredService<EffectEditWindow>(), "Effects");
 
         _imguiSupport.AddWindow(_services.GetRequiredService<EntitiesWindow>(), "Entities");
+
+        _imguiSupport.AddWindow(_services.GetRequiredService<TeleportPhaseEditWindow>(), "Effects");
 
         _imguiSupport.AddWindow(_services.GetRequiredService<GameOverlay>(), "Other");
 

@@ -10,7 +10,7 @@ using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 
 using RyoTune.Reloaded;
 
-namespace gbfr.utility.modtools.Hooks.Managers;
+namespace gbfr.utility.modtools.Hooks.Tables;
 
 public unsafe class SkillManagerHook : TableManagerBase
 {

@@ -11,7 +11,7 @@ using Reloaded.Hooks.Definitions;
 
 using RyoTune.Reloaded;
 
-namespace gbfr.utility.modtools.Hooks.Managers;
+namespace gbfr.utility.modtools.Hooks.Tables;
 
 public unsafe class CharacterManagerHook : TableManagerBase
 {

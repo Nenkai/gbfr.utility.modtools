@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gbfr.utility.modtools.Hooks;
+namespace gbfr.utility.modtools.Hooks.Behavior;
 
 public unsafe class EntityHooks : IHookBase
 {

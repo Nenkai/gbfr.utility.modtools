@@ -12,9 +12,6 @@ using Reloaded.Mod.Interfaces;
 
 using RyoTune.Reloaded;
 
-
-using static gbfr.utility.modtools.Hooks.Managers.CharacterManagerHook;
-
 namespace gbfr.utility.modtools.Hooks.Effects;
 
 public unsafe class EffectDataHooks : IHookBase
