@@ -1,28 +1,38 @@
-﻿using System;
+﻿using gbfr.utility.modtools.Hooks;
+using gbfr.utility.modtools.ImGuiSupport;
+
+using NenTools.ImGui.Interfaces;
+using NenTools.ImGui.Interfaces.Shell;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-using DearImguiSharp;
-
-using gbfr.utility.modtools.Hooks;
-using gbfr.utility.modtools.ImGuiSupport;
-
 namespace gbfr.utility.modtools.ImGuiSupport.MenuButtons;
 
-public unsafe class MouseControlButton : IImguiMenuComponent
+public class MouseControlButton : IImGuiComponent
 {
-    private ImguiSupport _imguiSupport;
+    private readonly IImGui _imGui;
+    private readonly ImGuiInputHookManager _imguiSupport;
 
-    public MouseControlButton(ImguiSupport imguiSupport)
+    public MouseControlButton(IImGui imGui, ImGuiInputHookManager imguiSupport)
     {
+        _imGui = imGui;
         _imguiSupport = imguiSupport;
     }
 
-    public void BeginMenuComponent()
+    public bool IsOverlay => false;
+
+    public void Render(IImGuiShell imGuiShell)
     {
-        ImGui.MenuItemBoolPtr($"Enable mouse control while menu is active", "", ref _imguiSupport.MouseActiveWhileMenuOpen, true);
+        
+    }
+
+    public void RenderMenu(IImGuiShell imGuiShell)
+    {
+        _imGui.MenuItemBoolPtr($"Enable mouse control while menu is active", "", ref _imguiSupport.MouseActiveWhileMenuOpen, true);
     }
 }

@@ -1,4 +1,6 @@
-﻿using DearImguiSharp;
+﻿using NenTools.ImGui.Implementation;
+using NenTools.ImGui.Interfaces;
+using NenTools.ImGui.Interfaces.Shell;
 
 using Reloaded.Mod.Interfaces;
 
@@ -10,42 +12,47 @@ using System.Threading.Tasks;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
-public unsafe class AboutWindow : IImguiWindow, IImguiMenuComponent
+public unsafe class AboutWindow : IImGuiComponent
 {
+    private readonly IImGui _imGui;
+
+    private readonly IModConfig _modConfig;
+
     public bool IsOverlay => false;
     public bool IsOpen = false;
 
-    private IModConfig _modConfig;
-
-    public AboutWindow(IModConfig modConfig)
+    public AboutWindow(IImGui imGui, IModConfig modConfig)
     {
+        _imGui = imGui;
         _modConfig = modConfig;
     }
 
-    public void BeginMenuComponent()
+    public void RenderMenu(IImGuiShell imGuiShell)
     {
-        if (ImGui.MenuItemEx("About Window", "", "", false, true))
+        if (_imGui.MenuItemEx("About Window", "", false, true))
         {
             IsOpen = true;
         }
     }
 
-    public void Render(ImguiSupport imguiSupport)
+    public void Render(IImGuiShell imGuiShell)
     {
         if (!IsOpen)
             return;
 
-        if (ImGui.Begin("Log Window", ref IsOpen, 0))
+        if (_imGui.Begin("Log Window"u8, ref IsOpen, 0))
         {
-            ImGui.Text($"{_modConfig.ModId} {_modConfig.ModVersion}");
-            ImGui.Text($"Made by {_modConfig.ModAuthor}");
-            ImGui.Spacing();
+            _imGui.Text($"{_modConfig.ModId} {_modConfig.ModVersion}");
+            _imGui.Text($"Made by {_modConfig.ModAuthor}");
+            _imGui.Spacing();
 
-            ImGui.Text("Keys:");
-            ImGui.Text("- INSERT: Show ImGui Menu");
-            ImGui.Spacing();
+            _imGui.Text("Keys:"u8);
+            _imGui.Text("- INSERT: Show ImGui Menu"u8);
+            _imGui.Spacing();
 
-            ImGui.Text("NOTE: Logs are also saved as a file in the game's directory as 'modtools_log.txt'.");
+            _imGui.Text("NOTE: Logs are also saved as a file in the game's directory as 'modtools_log.txt'."u8);
         }
+
+        _imGui.End();
     }
 }

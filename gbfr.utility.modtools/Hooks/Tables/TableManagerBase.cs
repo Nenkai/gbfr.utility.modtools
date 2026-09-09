@@ -1,5 +1,4 @@
-﻿using CppSharp.Runtime;
-using GBFRDataTools.Database.Entities;
+﻿using GBFRDataTools.Database.Entities;
 using GBFRDataTools.Database;
 
 using System;
@@ -17,7 +16,7 @@ public abstract class TableManagerBase : IHookBase
 {
     public List<DatabaseTable> Tables { get; set; } = [];
 
-    public abstract void Init();
+    public abstract void Init(string groupSource);
 
     public unsafe void AddTableMap(string name, StdUnorderedMap* rows, bool isVectorMap = false)
     {

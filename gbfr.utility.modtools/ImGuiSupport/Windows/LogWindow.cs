@@ -5,27 +5,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using DearImguiSharp;
+using NenTools.ImGui.Interfaces.Shell;
+using NenTools.ImGui.Interfaces;
+using System.Numerics;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
-public unsafe class LogWindow : IImguiWindow, IImguiMenuComponent
+public unsafe class LogWindow : IImGuiComponent
 {
+    private readonly IImGui _imGui;
+    private readonly ILogger _logger;
+
     public bool IsOverlay => false;
 
     public bool IsOpen = false;
     public bool _autoScroll = true;
 
-    private ILogger _logger;
-
-    private StreamWriter _sw = new StreamWriter("modtools_log.txt");
+    private readonly StreamWriter _sw = new("modtools_log.txt");
 
     public List<LogMessage> LastLines = new(2000);
-    private static object _lock = new object();
+    private static Lock _lock = new();
 
-    public LogWindow(ILogger logger)
+    public LogWindow(IImGui imGui, ILogger logger)
     {
+        _imGui = imGui;
+
         _logger = logger;
         _logger.OnWriteLine += _logger_OnWriteLine;
     }
@@ -43,71 +47,53 @@ public unsafe class LogWindow : IImguiWindow, IImguiMenuComponent
         }
     }
 
-    public void BeginMenuComponent()
+    public void RenderMenu(IImGuiShell imGuiShell)
     {
-        if (ImGui.MenuItemEx("Logs", "", "", false, true))
+        if (_imGui.MenuItem("Logs"u8))
         {
             IsOpen = true;
         }
     }
 
 
-    public void Render(ImguiSupport imguiSupport)
+    public void Render(IImGuiShell imGuiShell)
     {
         if (!IsOpen)
             return;
 
-        if (ImGui.Begin("Log Window", ref IsOpen, 0))
+        if (_imGui.Begin("Log Window"u8, ref IsOpen))
         {
-            if (ImGui.SmallButton("Clear"))
+            if (_imGui.SmallButton("Clear"u8))
                 LastLines.Clear();
 
-            ImGui.SameLine(0, 2);
-            if (ImGui.SmallButton("Copy"))
-                ImGui.SetClipboardText(string.Join("\n", LastLines.Select(e => e.Message)));
+            _imGui.SameLineEx(0, 2);
+            if (_imGui.SmallButton("Copy"u8))
+                _imGui.SetClipboardText(string.Join("\n", LastLines.Select(e => e.Message)));
 
-            ImGui.SameLine(0, 2);
-            ImGui.Checkbox("Auto-scroll", ref _autoScroll);
+            _imGui.SameLineEx(0, 2);
+            _imGui.Checkbox("Auto-scroll", ref _autoScroll);
 
-            ImGui.Checkbox("Enable FIle Logging", ref ImGuiConfig.LogFiles);
+            _imGui.Checkbox("Enable File Logging", ref ImGuiConfig.LogFiles);
 
-            var vecInternal = new ImVec2.__Internal();
-            var vector = new ImVec2(&vecInternal); // Heap allocation
-
-            ImGui.BeginChildEx("##log", 1234, vector, true, (int)(ImGuiWindowFlags.AlwaysVerticalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar));
-
-            var greyColor4 = new ImVec4.__Internal();
-            var greyColor = new ImVec4(&greyColor4); // Heap allocation
-            greyColor.X = 0.4f;
-            greyColor.Y = 0.4f;
-            greyColor.Z = 0.4f;
-            greyColor.W = 1.0f;
-
-            var whiteColor4 = new ImVec4.__Internal();
-            var whiteColor = new ImVec4(&whiteColor4); // Heap allocation
-            whiteColor.X = 1.0f;
-            whiteColor.Y = 1.0f;
-            whiteColor.Z = 1.0f;
-            whiteColor.W = 1.0f;
+            _imGui.BeginChild("##log", Vector2.Zero, window_flags: ImGuiWindowFlags.ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags.ImGuiWindowFlags_AlwaysHorizontalScrollbar);
 
             lock (_lock)
             {
                 for (int i = 0; i < LastLines.Count; i++)
                 {
-                    ImGui.TextColored(greyColor, $"[{LastLines[i].Time:HH:mm:ss.fff}]"); ImGui.SameLine(0, 4);
+                    _imGui.TextColored(new System.Numerics.Vector4(0.4f, 0.4f, 0.4f, 1.0f), $"[{LastLines[i].Time:HH:mm:ss.fff}]"); _imGui.SameLineEx(0, 4);
                     //ImGui.TextColored(greyColor, $"[{LastLines[i].Handler}]"); ImGui.SameLine(0, 4);
-                    ImGui.TextColored(whiteColor, LastLines[i].Message);
+                    _imGui.TextColored(new System.Numerics.Vector4(1.0f), LastLines[i].Message);
                 }
             }
 
 
-            if (_autoScroll && ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
-                ImGui.SetScrollHereY(1.0f);
+            if (_autoScroll && _imGui.GetScrollY() >= _imGui.GetScrollMaxY())
+                _imGui.SetScrollHereY(1.0f);
 
-            ImGui.EndChild();
-
-            ImGui.End();
+            _imGui.EndChild();
         }
+        _imGui.End();
     }
 }
 

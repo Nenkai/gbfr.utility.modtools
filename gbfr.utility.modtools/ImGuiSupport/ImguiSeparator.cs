@@ -5,21 +5,29 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-using DearImguiSharp;
-
-using gbfr.utility.modtools.Hooks;
+using NenTools.ImGui.Interfaces;
+using NenTools.ImGui.Interfaces.Shell;
 
 namespace gbfr.utility.modtools.ImGuiSupport;
 
-public class ImguiSeparator : IImguiMenuComponent
+public class ImguiSeparator : IImGuiComponent
 {
-    public ImguiSeparator()
+    private readonly IImGui _imGui;
+
+    public ImguiSeparator(IImGui imgui)
+    {
+        _imGui = imgui;
+    }
+
+    public bool IsOverlay => false;
+
+    public void Render(IImGuiShell imGuiShell)
     {
         
     }
 
-    public void BeginMenuComponent()
+    public void RenderMenu(IImGuiShell imGuiShell)
     {
-        ImGui.Separator();
+        _imGui.Separator();
     }
 }

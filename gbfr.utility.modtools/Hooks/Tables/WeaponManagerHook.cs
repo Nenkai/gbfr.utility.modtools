@@ -1,19 +1,26 @@
-﻿using System;
+﻿using NenTools.Reloaded.ScanManager.Interfaces;
+
+using Reloaded.Hooks.Definitions;
+using Reloaded.Mod.Interfaces;
+using Reloaded.Hooks.Definitions.Enums;
+using Reloaded.Memory.Interfaces;
+using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
+
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
-
-using Reloaded.Hooks.Definitions;
-using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-
-using RyoTune.Reloaded;
 
 namespace gbfr.utility.modtools.Hooks.Tables;
 
 public unsafe class WeaponManagerHook : TableManagerBase
 {
+    private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
+
     private delegate void WeaponManagerLoad(WeaponManager* this_);
     private IHook<WeaponManagerLoad> _weaponManagerLoadHook;
 
@@ -22,10 +29,10 @@ public unsafe class WeaponManagerHook : TableManagerBase
 
     }
 
-    public override void Init()
+    public override void Init(string groupSource)
     {
-        Project.Scans.AddScanHook(nameof(WeaponManagerLoad), (result, hooks)
-            => _weaponManagerLoadHook = hooks.CreateHook<WeaponManagerLoad>(WeaponManagerLoadImpl, result).Activate());
+        _scanManager.AddScan(nameof(WeaponManagerLoad), groupSource, result
+            => _weaponManagerLoadHook = _hooks.CreateHook<WeaponManagerLoad>(WeaponManagerLoadImpl, result).Activate());
     }
 
     public void WeaponManagerLoadImpl(WeaponManager* this_)

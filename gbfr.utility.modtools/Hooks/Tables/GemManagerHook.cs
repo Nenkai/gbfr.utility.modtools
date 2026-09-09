@@ -1,30 +1,37 @@
-﻿using System;
+﻿using NenTools.Reloaded.ScanManager.Interfaces;
+
+using Reloaded.Hooks.Definitions;
+using Reloaded.Mod.Interfaces;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Reloaded.Hooks.Definitions;
-
-using RyoTune.Reloaded;
-
 namespace gbfr.utility.modtools.Hooks.Tables;
 
 public unsafe class GemManagerHook : TableManagerBase
 {
+    private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
+
     public delegate void GemManagerLoad(GemManager* this_);
     public IHook<GemManagerLoad> HOOK_GemManagerLoad { get; private set; }
 
-    public GemManagerHook()
+    public GemManagerHook(ILogger logger, IScanManager scanManager, IReloadedHooks hooks)
     {
-
+        _logger = logger;
+        _scanManager = scanManager;
+        _hooks = hooks;
     }
 
-    public override void Init()
+    public override void Init(string groupSource)
     {
-        Project.Scans.AddScanHook(nameof(GemManagerLoad), (result, hooks)
-            => HOOK_GemManagerLoad = hooks.CreateHook<GemManagerLoad>(GemManagerLoadImpl, result).Activate());
+        _scanManager.AddScan(nameof(GemManagerLoad), groupSource, result
+            => HOOK_GemManagerLoad = _hooks.CreateHook<GemManagerLoad>(GemManagerLoadImpl, result).Activate());
     }
 
     public void GemManagerLoadImpl(GemManager* this_)

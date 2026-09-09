@@ -1,31 +1,38 @@
-﻿using System;
+﻿using NenTools.Reloaded.ScanManager.Interfaces;
+
+using Reloaded.Hooks.Definitions;
+using Reloaded.Mod.Interfaces;
+
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-using RyoTune.Reloaded;
-
-using Reloaded.Hooks.Definitions;
-
 namespace gbfr.utility.modtools.Hooks.Events;
 
 public unsafe class EventHooks : IHookBase
 {
+    private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
+
     public unsafe delegate nint Event_Unk(EventManager* this_);
     public static IHook<Event_Unk> HOOK_EventUnk { get; private set; }
 
     public EventManager* EventManagerPtr;
 
-    public EventHooks()
+    public EventHooks(ILogger logger, IScanManager scanManager, IReloadedHooks hooks)
     {
-
+        _logger = logger;
+        _scanManager = scanManager;
+        _hooks = hooks;
     }
 
-    public void Init()
+    public void Init(string groupSource)
     {
-        Project.Scans.AddScanHook(nameof(Event_Unk), (result, hooks)
-            => HOOK_EventUnk = hooks.CreateHook<Event_Unk>(HOOK_EventUnkImpl, result).Activate());
+        _scanManager.AddScan(nameof(Event_Unk), groupSource, result
+            => HOOK_EventUnk = _hooks.CreateHook<Event_Unk>(HOOK_EventUnkImpl, result).Activate());
     }
 
     public nint HOOK_EventUnkImpl(EventManager* this_)

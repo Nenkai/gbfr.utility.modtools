@@ -1,46 +1,52 @@
-﻿using System;
+﻿using gbfr.utility.modtools.Native;
+
+using NenTools.Reloaded.ScanManager.Interfaces;
+
+using Reloaded.Hooks.Definitions;
+using Reloaded.Mod.Interfaces;
+
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Concurrent.Extended;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-using gbfr.utility.modtools.Native;
-
-using Reloaded.Hooks.Definitions;
-using Reloaded.Mod.Interfaces;
-
-using RyoTune.Reloaded;
-
 namespace gbfr.utility.modtools.Hooks.Effects;
 
 public unsafe class EffectDataHooks : IHookBase
 {
-    public unsafe delegate short asset__EffectDataImpl__OpenXmlFile(EffectDataImpl* this_);
+    private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
+
+    public delegate short asset__EffectDataImpl__OpenXmlFile(EffectDataImpl* this_);
     public static asset__EffectDataImpl__OpenXmlFile WRAPPER_asset__EffectDataImpl__Load { get; private set; }
 
-    public unsafe delegate void asset__EffectData__ReadXmlAndOpenEsts(void* this_, void* a2);
+    public delegate void asset__EffectData__ReadXmlAndOpenEsts(void* this_, void* a2);
     public static IHook<asset__EffectData__ReadXmlAndOpenEsts> HOOK_asset__EffectData__ReadXmlAndMapEsts { get; private set; }
 
-    public unsafe delegate bool asset__EffectData__Destructor(EffectData* this_);
+    public delegate bool asset__EffectData__Destructor(EffectData* this_);
     public static IHook<asset__EffectData__Destructor> HOOK_asset__EffectData__Destructor { get; private set; }
 
     public ConcurrentSortedDictionary<string, EffectSet> EffectSets { get; } = [];
 
-    public EffectDataHooks()
+    public EffectDataHooks(ILogger logger, IScanManager scanManager, IReloadedHooks hooks)
     {
-
+        _logger = logger;
+        _scanManager = scanManager;
+        _hooks = hooks;
     }
 
-    public void Init()
+    public void Init(string groupSource)
     {
         // We hook this because character object params are created separately.
-        Project.Scans.AddScanHook(nameof(asset__EffectDataImpl__OpenXmlFile), (result, hooks)
-            => WRAPPER_asset__EffectDataImpl__Load = hooks.CreateWrapper<asset__EffectDataImpl__OpenXmlFile>(result, out _));
+        _scanManager.AddScan(nameof(asset__EffectDataImpl__OpenXmlFile), groupSource, result
+            => WRAPPER_asset__EffectDataImpl__Load = _hooks.CreateWrapper<asset__EffectDataImpl__OpenXmlFile>(result, out _));
 
         // Maps the bxm file, open the est buffers
-        Project.Scans.AddScanHook(nameof(asset__EffectData__ReadXmlAndOpenEsts), (result, hooks)
-            => HOOK_asset__EffectData__ReadXmlAndMapEsts = hooks.CreateHook<asset__EffectData__ReadXmlAndOpenEsts>(asset__EffectData__ReadXmlAndOpenEstsImpl, result).Activate());
+        _scanManager.AddScan(nameof(asset__EffectData__ReadXmlAndOpenEsts), groupSource, result
+            => HOOK_asset__EffectData__ReadXmlAndMapEsts = _hooks.CreateHook<asset__EffectData__ReadXmlAndOpenEsts>(asset__EffectData__ReadXmlAndOpenEstsImpl, result).Activate());
 
         // To keep track of unloaded effects
         // NOTE: Removed because the dtor always seems to be called. It seems the Ests are probably passed to another structure.

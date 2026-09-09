@@ -1,30 +1,37 @@
-﻿using System;
+﻿using NenTools.Reloaded.ScanManager.Interfaces;
+
+using Reloaded.Hooks.Definitions;
+using Reloaded.Mod.Interfaces;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using RyoTune.Reloaded;
-
-using Reloaded.Hooks.Definitions;
-
 namespace gbfr.utility.modtools.Hooks.Tables;
 
 public unsafe class LimitApManagerHook : TableManagerBase
 {
+    private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
+
     private delegate void LimitManagerLoad(LimitManager* this_);
     private IHook<LimitManagerLoad> _limitManagerLoadHook;
 
-    public LimitApManagerHook()
+    public LimitApManagerHook(ILogger logger, IScanManager scanManager, IReloadedHooks hooks)
     {
-
+        _logger = logger;
+        _scanManager = scanManager;
+        _hooks = hooks;
     }
 
-    public override void Init()
+    public override void Init(string groupSource)
     {
-        Project.Scans.AddScanHook(nameof(LimitManagerLoad), (result, hooks)
-            => _limitManagerLoadHook = hooks.CreateHook<LimitManagerLoad>(LimitManagerLoadImpl, result).Activate());
+        _scanManager.AddScan(nameof(LimitManagerLoad), groupSource, result
+            => _limitManagerLoadHook = _hooks.CreateHook<LimitManagerLoad>(LimitManagerLoadImpl, result).Activate());
     }
 
     public void LimitManagerLoadImpl(LimitManager* this_)

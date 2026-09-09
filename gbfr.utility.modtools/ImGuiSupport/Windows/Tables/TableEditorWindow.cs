@@ -1,22 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-
-using DearImguiSharp;
+﻿using gbfr.utility.modtools.Hooks.Tables;
+using gbfr.utility.modtools.Native;
 
 using GBFRDataTools.Database;
 using GBFRDataTools.Database.Entities;
-using gbfr.utility.modtools.Hooks.Tables;
-using gbfr.utility.modtools.Native;
+
+using NenTools.ImGui.Implementation;
+using NenTools.ImGui.Interfaces;
+using NenTools.ImGui.Interfaces.Shell;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
-public unsafe class TableEditorWindow : IImguiWindow
+public unsafe class TableEditorWindow : IImGuiComponent
 {
+    private readonly IImGui _imGui;
+
     public bool IsOverlay => false;
 
     public string WindowName { get; set; }
@@ -29,15 +35,17 @@ public unsafe class TableEditorWindow : IImguiWindow
     public float[] _colWidths;
     private TableManagerBase _tableManagerBase;
 
-    public TableEditorWindow(string windowName, TableManagerBase managerBase)
+    public TableEditorWindow(IImGui imGui, string windowName, TableManagerBase managerBase)
     {
+        _imGui = imGui;
+
         WindowName = windowName;
         _tableManagerBase = managerBase;
     }
 
-    public void BeginMenuComponent()
+    public void RenderMenu(IImGuiShell imGuiShell)
     {
-        if (ImGui.MenuItemEx(WindowName, "", "", false, true))
+        if (_imGui.MenuItemEx(WindowName, "", false, true))
             _isOpen = true;
     }
 
@@ -47,22 +55,19 @@ public unsafe class TableEditorWindow : IImguiWindow
         _appliedColumnWidths = false;
     }
 
-    public void Render(ImguiSupport imguiSupport)
+    public void Render(IImGuiShell imGuiShell)
     {
         if (!_isOpen)
             return;
 
-        if (ImGui.Begin(WindowName, ref _isOpen, 0))
+        if (_imGui.Begin(WindowName, ref _isOpen))
         {
-            var vecInternal = new ImVec2.__Internal();
-            var vector = new ImVec2(&vecInternal); // Heap allocation
-
-            if (ImGui.BeginCombo("Table", SelectedTable?.Name ?? "<select a table>", (int)ImGuiComboFlags.None))
+            if (_imGui.BeginCombo("Table", SelectedTable?.Name ?? "<select a table>"))
             {
                 foreach (var table in _tableManagerBase.Tables)
                 {
                     bool isSelected = table == SelectedTable;
-                    if (ImGui.SelectableBool(table.Name, isSelected, 0, vector))
+                    if (_imGui.SelectableEx(table.Name, isSelected, 0, Vector2.Zero))
                     {
                         SelectedTable = table;
                         OnSelectedTable();
@@ -70,18 +75,18 @@ public unsafe class TableEditorWindow : IImguiWindow
                     }
 
                     if (isSelected)
-                        ImGui.SetItemDefaultFocus();
+                        _imGui.SetItemDefaultFocus();
                 }
 
-                ImGui.EndCombo();
+                _imGui.EndCombo();
             }
 
-            ImGui.Checkbox("Group Rows by Key (for grouped tables)", ref _groupRows);
-            ImGui.Spacing();
+            _imGui.Checkbox("Group Rows by Key (for grouped tables)", ref _groupRows);
+            _imGui.Spacing();
 
             RenderTable();
 
-            ImGui.End();
+            _imGui.End();
         }
     }
 
@@ -89,20 +94,16 @@ public unsafe class TableEditorWindow : IImguiWindow
     {
         if (SelectedTable is not null)
         {
-            var vecInternal = new ImVec2.__Internal();
-            var vector = new ImVec2(&vecInternal); // Heap allocation
-
             int numColumns = SelectedTable.IsVectorMap && _groupRows ? 1 : 1 + SelectedTable.Columns.Count;
-            if (ImGui.BeginTable("#tbl", numColumns,
-                (int)(ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable),
-                vector, 0.0f))
+            if (_imGui.BeginTable("#tbl"u8, numColumns, ImGuiTableFlags.ImGuiTableFlags_Borders | ImGuiTableFlags.ImGuiTableFlags_ScrollX | ImGuiTableFlags.ImGuiTableFlags_ScrollY | 
+                ImGuiTableFlags.ImGuiTableFlags_RowBg | ImGuiTableFlags.ImGuiTableFlags_Resizable))
             {
                 if (SelectedTable.RowMap is not null)
                     RenderTableFromUnorderedMap(SelectedTable.RowMap);
                 else
                     RenderTableFromVector(SelectedTable.RowVector);
 
-                ImGui.EndTable();
+                _imGui.EndTable();
             }
         }
     }
@@ -126,7 +127,7 @@ public unsafe class TableEditorWindow : IImguiWindow
         for (int i = 0; i < _colWidths.Length; i++)
         {
             float colWidth = _colWidths[i];
-            ImGui.TableSetColumnWidth(1 + i, colWidth + 15);
+            _imGui.SetColumnWidth(1 + i, colWidth + 15); // TODO: Fix
         }
 
         _appliedColumnWidths = true;
@@ -134,37 +135,33 @@ public unsafe class TableEditorWindow : IImguiWindow
 
     private void RenderTableFromUnorderedMap(StdUnorderedMap* map)
     {
-        var vecInternal = new ImVec2.__Internal();
-        var vector = new ImVec2(&vecInternal); // Heap allocation
-
         if (_groupRows && SelectedTable.IsVectorMap)
         {
-            ImGui.TableSetupColumn("Key", (int)ImGuiTableColumnFlags.WidthStretch, 5000.0f, 0);
-            ImGui.TableHeadersRow();
+            _imGui.TableSetupColumnEx("Key", ImGuiTableColumnFlags.ImGuiTableColumnFlags_WidthStretch, 5000.0f, 0);
+            _imGui.TableHeadersRow();
 
             uint numRows = map->List.Size;
             StdListNode* currentEntry = map->List.Node->Next; // First entry is always empty
 
             for (int i = 0; i < numRows; i++)
             {
-                ImGui.TableNextRow(0, 0);
-                ImGui.TableNextColumn();
+                _imGui.TableNextRow();
+                _imGui.TableNextColumn();
 
                 StdVector* vec = (StdVector*)&currentEntry->Data;
 
                 string idName = IdDatabase.Hashes.ContainsKey(currentEntry->Key) ? IdDatabase.Hashes[currentEntry->Key] : $"{currentEntry->Key:X8}";
-                if (ImGui.TreeNodeExStr(idName, (int)ImGuiTreeNodeFlags.SpanFullWidth))
+                if (_imGui.TreeNodeEx(idName, ImGuiTreeNodeFlags.ImGuiTreeNodeFlags_SpanFullWidth))
                 {
-                    if (ImGui.BeginTable("#tbl2", 1 + SelectedTable.Columns.Count,
-                        (int)(ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable),
-                        vector, 0.0f))
+                    if (_imGui.BeginTable("#tbl2", 1 + SelectedTable.Columns.Count, 
+                        ImGuiTableFlags.ImGuiTableFlags_Borders | ImGuiTableFlags.ImGuiTableFlags_ScrollX | ImGuiTableFlags.ImGuiTableFlags_ScrollY | ImGuiTableFlags.ImGuiTableFlags_RowBg | ImGuiTableFlags.ImGuiTableFlags_Resizable))
                     {
                         RenderTableFromVector(vec);
                         ApplyColumnWidths();
-                        ImGui.EndTable();
+                        _imGui.EndTable();
                     }
 
-                    ImGui.TreePop();
+                    _imGui.TreePop();
                 }
 
                 currentEntry = currentEntry->Next;
@@ -210,85 +207,76 @@ public unsafe class TableEditorWindow : IImguiWindow
 
     private void SetupTableHeader()
     {
-        ImGui.TableSetupScrollFreeze(1, 1);
-        ImGui.TableSetupColumn(string.Empty, 0, 0.0f, 0); // Row Number
-
-        var vecInternal = new ImVec2.__Internal();
-        var vector = new ImVec2(&vecInternal); // Heap allocation
+        _imGui.TableSetupScrollFreeze(1, 1);
+        _imGui.TableSetupColumn(string.Empty); // Row Number
 
         for (int i = 0; i < SelectedTable.Columns.Count; i++)
         {
-            TableColumn? column = SelectedTable.Columns[i];
+            TableColumn column = SelectedTable.Columns[i];
             if (!_appliedColumnWidths)
             {
-                ImGui.CalcTextSize(vector, column.Name, null, false, 0.0f);
-                _colWidths[i] = vector.X;
+                Vector2 textSize = _imGui.CalcTextSize(column.Name);
+                _colWidths[i] = textSize.X;
             }
 
-            ImGui.TableSetupColumn(column.Name, 0, 0.0f, 0);
+            _imGui.TableSetupColumn(column.Name);
         }
 
-        ImGui.TableHeadersRow();
+        _imGui.TableHeadersRow();
 
     }
 
     private void AddRow(byte* rowData, int rowIndex)
     {
-        ImGui.TableNextRow((int)ImGuiTableRowFlags.None, 0.0f);
+        _imGui.TableNextRow();
 
         // Row number column for row
-        ImGui.TableSetColumnIndex(0);
-        ImGui.SetNextItemWidth(10);
-        ImGui.Text(rowIndex.ToString());
+        _imGui.TableSetColumnIndex(0);
+        _imGui.SetNextItemWidth(10);
+        _imGui.Text(rowIndex.ToString());
 
         for (int j = 0; j < SelectedTable.Columns.Count; j++)
         {
-            ImGui.TableSetColumnIndex(1 + j);
-            ImGui.SetNextItemWidth(-1f); // Make the cell component fill the column
-
-            var vecInternal = new ImVec2.__Internal();
-            var vector = new ImVec2(&vecInternal); // Heap allocation
+            _imGui.TableSetColumnIndex(1 + j);
+            _imGui.SetNextItemWidth(-1f); // Make the cell component fill the column
 
             byte* valPtr = rowData + SelectedTable.Columns[j].Offset;
+            Vector2 size = Vector2.Zero;
             switch (SelectedTable.Columns[j].Type)
             {
                 case DBColumnType.SByte:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*(sbyte*)valPtr).ToString(), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.S8, (nint)valPtr, 0, 0, "%d", (int)ImGuiInputTextFlags.None);
+                    if (!_appliedColumnWidths) size = _imGui.CalcTextSize((*(sbyte*)valPtr).ToString());
+                    _imGui.InputScalar($"##cell_{rowIndex}_{j}", ref Unsafe.AsRef<sbyte>(valPtr));
                     break;
                 case DBColumnType.Byte:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*valPtr).ToString(), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.U8, (nint)valPtr, 0, 0, "%u", (int)ImGuiInputTextFlags.None);
+                    if (!_appliedColumnWidths) size = _imGui.CalcTextSize((*valPtr).ToString());
+                    _imGui.InputScalar($"##cell_{rowIndex}_{j}", ref Unsafe.AsRef<byte>(valPtr));
                     break;
                 case DBColumnType.Int:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*(int*)valPtr).ToString(), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.S32, (nint)valPtr, 0, 0, "%d", (int)ImGuiInputTextFlags.None);
+                    if (!_appliedColumnWidths) size = _imGui.CalcTextSize((*(int*)valPtr).ToString());
+                    _imGui.InputScalar($"##cell_{rowIndex}_{j}", ref Unsafe.AsRef<int>(valPtr));
                     break;
                 case DBColumnType.UInt:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*(uint*)valPtr).ToString(), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.U32, (nint)valPtr, 0, 0, "%u", (int)ImGuiInputTextFlags.None);
+                case DBColumnType.HexUInt:
+                    if (!_appliedColumnWidths) size = _imGui.CalcTextSize((*(uint*)valPtr).ToString());
+                    _imGui.InputScalar($"##cell_{rowIndex}_{j}", ref Unsafe.AsRef<uint>(valPtr));
                     break;
                 case DBColumnType.Short:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*(short*)valPtr).ToString(), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.S16, (nint)valPtr, 0, 0, "%d", (int)ImGuiInputTextFlags.None);
+                    if (!_appliedColumnWidths) size = _imGui.CalcTextSize((*(short*)valPtr).ToString());
+                    _imGui.InputScalar($"##cell_{rowIndex}_{j}", ref Unsafe.AsRef<short>(valPtr));
                     break;
                 case DBColumnType.Int64:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*(long*)valPtr).ToString(), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.S64, (nint)valPtr, 0, 0, "%d", (int)ImGuiInputTextFlags.None);
+                    if (!_appliedColumnWidths) size = _imGui.CalcTextSize((*(long*)valPtr).ToString());
+                    _imGui.InputScalar($"##cell_{rowIndex}_{j}", ref Unsafe.AsRef<long>(valPtr));
                     break;
-                case DBColumnType.HexUInt:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*(uint*)valPtr).ToString("X8"), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.U32, (nint)valPtr, 0, 0, "%x", (int)ImGuiInputTextFlags.None);
-                    break;
-
                 case DBColumnType.Float:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*(float*)valPtr).ToString(), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.Float, (nint)valPtr, 0, 0, "%0.2f", (int)ImGuiInputTextFlags.None);
+                    if (!_appliedColumnWidths) size = _imGui.CalcTextSize((*(float*)valPtr).ToString());
+                    _imGui.InputScalar($"##cell_{rowIndex}_{j}", ref Unsafe.AsRef<float>(valPtr));
                     break;
 
                 case DBColumnType.Double:
-                    if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, (*(double*)valPtr).ToString(), null, false, 0.0f);
-                    ImGui.InputScalar($"##cell_{rowIndex}_{j}", (int)ImGuiDataType.Double, (nint)valPtr, 0, 0, "%d", (int)ImGuiInputTextFlags.None);
+                    if (!_appliedColumnWidths) size = _imGui.CalcTextSize((*(double*)valPtr).ToString());
+                    _imGui.InputScalar($"##cell_{rowIndex}_{j}", ref Unsafe.AsRef<double>(valPtr));
                     break;
 
                 case DBColumnType.HashString:
@@ -297,16 +285,16 @@ public unsafe class TableEditorWindow : IImguiWindow
                     {
                         nint strPtr = Marshal.StringToHGlobalAnsi(id);
 
-                        if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, id, null, false, 0.0f);
-                        ImGui.InputText($"##cell_{rowIndex}_{j}", (sbyte*)strPtr, id.Length + 1, (int)ImGuiInputTextFlags.None, null, 0);
+                        if (!_appliedColumnWidths) size = _imGui.CalcTextSize(id);
+                        _imGui.InputText($"##cell_{rowIndex}_{j}", (sbyte*)strPtr, (nuint)id.Length + 1);
                     }
                     else
                     {
                         string idHex = (*(uint*)valPtr).ToString("X8");
                         nint strPtr = Marshal.StringToHGlobalAnsi(idHex);
 
-                        if (!_appliedColumnWidths) ImGui.CalcTextSize(vector, idHex, null, false, 0.0f);
-                        ImGui.InputText($"##cell_{rowIndex}_{j}", (sbyte*)strPtr, 9, (int)ImGuiInputTextFlags.None, null, 0);
+                        if (!_appliedColumnWidths) size = _imGui.CalcTextSize(idHex);
+                        _imGui.InputText($"##cell_{rowIndex}_{j}", (sbyte*)strPtr, 9);
                     }
                     break;
 
@@ -315,9 +303,9 @@ public unsafe class TableEditorWindow : IImguiWindow
                     if (!_appliedColumnWidths)
                     {
                         string str = Encoding.UTF8.GetString(valPtr, SelectedTable.Columns[j].StringLength);
-                        ImGui.CalcTextSize(vector, str, null, false, 0.0f);
+                        size = _imGui.CalcTextSize(str);
                     }
-                    ImGui.InputText($"##cell_{rowIndex}_{j}", (sbyte*)valPtr, SelectedTable.Columns[j].StringLength, (int)ImGuiInputTextFlags.None, null, 0);
+                    _imGui.InputText($"##cell_{rowIndex}_{j}", (sbyte*)valPtr, (nuint)SelectedTable.Columns[j].StringLength);
                     break;
 
                 default:
@@ -325,8 +313,8 @@ public unsafe class TableEditorWindow : IImguiWindow
 
             }
 
-            if (!_appliedColumnWidths && vector.X > _colWidths[j])
-                _colWidths[j] = vector.X;
+            if (!_appliedColumnWidths && size.X > _colWidths[j])
+                _colWidths[j] = size.X;
         }
     }
 }

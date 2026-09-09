@@ -1,29 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-
-using DearImguiSharp;
-
-using gbfr.utility.modtools.Hooks.Reflection;
+﻿using gbfr.utility.modtools.Hooks.Reflection;
 using gbfr.utility.modtools.ImGuiSupport;
+
+using NenTools.ImGui.Interfaces;
+using NenTools.ImGui.Interfaces.Shell;
 
 namespace gbfr.utility.modtools.ImGuiSupport.MenuButtons;
 
-public unsafe class DumpMenuButton : IImguiMenuComponent
+public unsafe class DumpMenuButton : IImGuiComponent
 {
-    private ReflectionHooks _reflectionHooks;
+    private readonly IImGui _imGui;
+    private readonly ReflectionHooks _reflectionHooks;
 
-    public DumpMenuButton(ReflectionHooks refHooks)
+    public DumpMenuButton(IImGui imgui, ReflectionHooks reflectionHooks)
     {
-        _reflectionHooks = refHooks;
+        _imGui = imgui;
+        _reflectionHooks = reflectionHooks;
     }
 
-    public void BeginMenuComponent()
+    public bool IsOverlay => false;
+
+    public void Render(IImGuiShell imGuiShell)
     {
-        if (ImGui.MenuItemEx($"Dump reflection classes ({_reflectionHooks.ObjectCount})", "", "", false, _reflectionHooks.HasLoadedObjects))
+
+    }
+
+    public void RenderMenu(IImGuiShell imGuiShell)
+    {
+        if (_imGui.MenuItemEx($"Dump reflection classes ({_reflectionHooks.ObjectCount})", "", false, _reflectionHooks.HasLoadedObjects))
         {
             _reflectionHooks.DumpAll();
         }

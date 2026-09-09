@@ -8,5 +8,5 @@ namespace gbfr.utility.modtools.Hooks;
 
 public interface IHookBase
 {
-    public void Init();
+    public void Init(string groupSource);
 }

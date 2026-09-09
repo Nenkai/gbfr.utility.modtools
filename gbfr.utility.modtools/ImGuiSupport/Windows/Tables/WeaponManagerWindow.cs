@@ -8,12 +8,14 @@ using System.Runtime.InteropServices;
 
 using gbfr.utility.modtools.Hooks.Tables;
 
+using NenTools.ImGui.Interfaces;
+
 namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class WeaponManagerWindow : TableEditorWindow
 {
-    public WeaponManagerWindow(WeaponManagerHook tableManagerBase)
-        : base("WeaponManager", tableManagerBase)
+    public WeaponManagerWindow(IImGui imGui, WeaponManagerHook tableManagerBase)
+        : base(imGui, "WeaponManager", tableManagerBase)
     {
 
     }

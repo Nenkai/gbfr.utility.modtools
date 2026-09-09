@@ -1,9 +1,12 @@
 ﻿using gbfr.utility.modtools.Native;
 
-using Reloaded.Hooks.Definitions;
-using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
+using NenTools.Reloaded.ScanManager.Interfaces;
 
-using RyoTune.Reloaded;
+using Reloaded.Hooks.Definitions;
+using Reloaded.Mod.Interfaces;
+using Reloaded.Hooks.Definitions.Enums;
+using Reloaded.Memory.Interfaces;
+using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 
 using System;
 using System.Buffers;
@@ -13,36 +16,43 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.CodeDom;
 
 namespace gbfr.utility.modtools.Hooks.Behavior;
 
 public unsafe class EntityHooks : IHookBase
 {
+    private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
+
     public StdVector<EntityRef>* LoadedEntitiesPtr;
     public nint EnemyStartIndexPtr;
 
-    public delegate ExEmAttackTarget* EntityRef_GetEmAttackTargetExtension(EntityRef* entityRef);
+    public delegate void* EntityRef_GetEmAttackTargetExtension(EntityRef* entityRef);
     public EntityRef_GetEmAttackTargetExtension WRAPPER_EntityRef_GetEmAttackTargetExtension;
 
     public delegate float GetHostilityForPlayer(uint playerIndex);
     public GetHostilityForPlayer WRAPPER_GetHostilityForPlayer;
 
-    public EntityHooks()
+    public EntityHooks(ILogger logger, IScanManager scanManager, IReloadedHooks hooks)
     {
-
+        _logger = logger;
+        _scanManager = scanManager;
+        _hooks = hooks;
     }
 
-    public void Init()
+    public void Init(string groupSource)
     {
-        Project.Scans.AddScanHook(nameof(EntityRef_GetEmAttackTargetExtension), (result, hooks)
-            => WRAPPER_EntityRef_GetEmAttackTargetExtension = hooks.CreateWrapper<EntityRef_GetEmAttackTargetExtension>(result, out _));
+        _scanManager.AddScan(nameof(EntityRef_GetEmAttackTargetExtension), groupSource, result
+            => WRAPPER_EntityRef_GetEmAttackTargetExtension = _hooks.CreateWrapper<EntityRef_GetEmAttackTargetExtension>(result, out _));
 
         // TODO: Move to battle hooks.
-        Project.Scans.AddScanHook(nameof(GetHostilityForPlayer), (result, hooks)
-            => WRAPPER_GetHostilityForPlayer = hooks.CreateWrapper<GetHostilityForPlayer>(result, out _));
+        _scanManager.AddScan(nameof(GetHostilityForPlayer), groupSource, result
+            => WRAPPER_GetHostilityForPlayer = _hooks.CreateWrapper<GetHostilityForPlayer>(result, out _));
 
-        Project.Scans.AddScan("LoadedEntitiesPtrAccess", addr => LoadedEntitiesPtr = (StdVector<EntityRef>*)(addr + *(int*)(addr + 3) + 7));
-        Project.Scans.AddScan("EnemyStartIndexAccess", addr => EnemyStartIndexPtr = addr + *(int*)(addr + 3) + 7);
+        _scanManager.AddScan("LoadedEntitiesPtrAccess", groupSource, addr => LoadedEntitiesPtr = (StdVector<EntityRef>*)(addr + *(int*)(addr + 3) + 7));
+        _scanManager.AddScan("EnemyStartIndexAccess", groupSource, addr => EnemyStartIndexPtr = addr + *(int*)(addr + 3) + 7);
     }
 }
 
@@ -69,34 +79,13 @@ public unsafe struct EntityWrapper
     public nint field_38;
     public nint field_40;
     public nint field_48;
-    public nint field_50;
+    public nint ObjReadWithAppend;
     public nint field_58;
     public nint field_60;
     public nint field_68;
     public cObj* EntityObjPtr;
 }
 
-public unsafe struct ExEmAttackTarget
-{
-    public nint __vftable;
-    public nint qword8;
-    public StdVector<AttackTargetPlayerEntry> AttackTargetPlayerList; // 0x10
-    public StdUnorderedMapHash64 HashToAttackHateParamMap; // 0x28
-    public EntityRef Target; // 0x78
-    public nint field_0x80;
-    public nint field_0x88;
-    public nint qword90;
-    public int qword98;
-    public int NumTargetUpdates;
-    public float Score;
-    public byte field_A4;
-    public byte field_A5;
-    public byte field_A6;
-    public byte field_A7;
-    public int field_A8;
-    public int field_AC;
-    public nint field_B0;
-}
 
 public unsafe struct AttackTargetPlayerEntry
 {
@@ -215,7 +204,7 @@ public unsafe struct StdListHash64 // std::list
 }
 
 // https://github.com/microsoft/STL/blob/881bcadeca4ae9240a132588d9ac983e7b24dbe0/stl/inc/xhash#L1960
-public unsafe struct StdUnorderedMapHash64
+public unsafe struct StdUnorderedMapHash64 // size: 0x40
 {
     public ulong LoadFactor;
     public StdListHash64 List;

@@ -1,7 +1,8 @@
-﻿using DearImguiSharp;
-
-using gbfr.utility.modtools.Hooks;
+﻿using gbfr.utility.modtools.Hooks;
 using gbfr.utility.modtools.Hooks.Effects;
+
+using NenTools.ImGui.Interfaces;
+using NenTools.ImGui.Interfaces.Shell;
 
 using Reloaded.Mod.Interfaces;
 
@@ -17,46 +18,48 @@ using System.Transactions;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
-public unsafe class TeleportPhaseEditWindow : IImguiWindow, IImguiMenuComponent
+public unsafe class TeleportPhaseEditWindow : IImGuiComponent
 {
+    private readonly IImGui _imGui;
+
     public bool IsOverlay => false;
     public bool IsOpen = false;
 
     private TeleportHooks _teleportHooks;
 
-    public TeleportPhaseEditWindow(TeleportHooks teleportHooks)
+    public TeleportPhaseEditWindow(IImGui imGui, TeleportHooks teleportHooks)
     {
+        _imGui = imGui;
         _teleportHooks = teleportHooks;
     }
 
-    public void BeginMenuComponent()
+    public void RenderMenu(IImGuiShell imGuiShell)
     {
-        if (ImGui.MenuItemEx("Teleport Phases", "", "", false, true))
+        if (_imGui.MenuItemEx("Teleport Phases", "", false, true))
         {
             IsOpen = true;
         }
     }
 
-    public void Render(ImguiSupport imguiSupport)
+    public void Render(IImGuiShell imGuiShell)
     {
         if (!IsOpen)
             return;
 
-        if (ImGui.Begin("Teleport Phases", ref IsOpen, 0))
+        if (_imGui.Begin("Teleport Phases", ref IsOpen, 0))
         {
             for (int i = 0; i < TeleportHooks.TableSize; i++)
             {
-                ImGui.InputInt($"Phase[{i}]", ref Unsafe.AsRef<int>((int*)_teleportHooks.TeleportPhaseTablePtr + i), 1, 1, 0);
+                _imGui.InputInt($"Phase[{i}]", ref Unsafe.AsRef<int>((int*)_teleportHooks.TeleportPhaseTablePtr + i));
             }
 
-            Vector2 vec = Vector2.Zero;
-            if (ImGui.Button("Jump! (Phase[0])", new ImVec2(&vec)))
+            if (_imGui.Button("Jump! (Phase[0])"u8))
             {
                 uint id = *(uint*)_teleportHooks.TeleportPhaseTablePtr;
                 _teleportHooks.WRAPPER_PhaseJump(id, null, 0xFF000000);
             }
 
-            ImGui.End();
+            _imGui.End();
         }
     }
 }

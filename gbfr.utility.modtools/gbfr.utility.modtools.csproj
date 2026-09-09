@@ -43,15 +43,19 @@
   <ItemGroup>
     <PackageReference Include="GBFRDataTools.Database" Version="1.0.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
-    <PackageReference Include="Reloaded.Imgui.Hook" Version="4.0.1" />
-    <PackageReference Include="Reloaded.Imgui.Hook.Direct3D11" Version="1.0.2" />
-    <PackageReference Include="Reloaded.Memory" Version="9.4.1" />
+    <PackageReference Include="Reloaded.Memory" Version="9.4.3" />
     <PackageReference Include="Reloaded.Memory.Sigscan" Version="3.1.8" />
     <PackageReference Include="Reloaded.Memory.SigScan.ReloadedII.Interfaces" Version="1.2.0" />
     <PackageReference Include="Reloaded.Mod.Interfaces" Version="2.4.0" ExcludeAssets="runtime" />
     <PackageReference Include="Reloaded.SharedLib.Hooks" Version="1.9.0" />
-    <PackageReference Include="RyoTune.Reloaded" Version="4.2.1" />
-    <PackageReference Include="SharedScans.Interfaces" Version="1.2.0" />
+	<PackageReference Include="gbfrelink.utility.manager.Interfaces" Version="1.1.0" />
+	<PackageReference Include="NenTools.Reloaded.ScanManager.Interfaces" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NenTools.ImGui\NenTools.ImGui.Hooks.DirectX11\NenTools.ImGui.Hooks.DirectX11.csproj" />
+    <ProjectReference Include="..\NenTools.ImGui\NenTools.ImGui.Implementation\NenTools.ImGui.Implementation.csproj" />
+    <ProjectReference Include="..\NenTools.ImGui\NenTools.ImGui.Shell\NenTools.ImGui.Shell.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -67,7 +71,16 @@
     <None Update="Fonts\Roboto\Roboto-Medium.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Project\gbfr.utility.modtools\scans.ini">
+    <None Update="Fonts\TwitterColorEmoji\LICENSE-CC-BY.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Fonts\TwitterColorEmoji\twemoji.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Signatures\granblue_fantasy_relink_er.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Signatures\granblue_fantasy_relink.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

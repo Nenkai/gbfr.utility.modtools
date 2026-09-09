@@ -1,6 +1,7 @@
-﻿using DearImguiSharp;
+﻿using gbfr.utility.modtools.Hooks.Effects;
 
-using gbfr.utility.modtools.Hooks.Effects;
+using NenTools.ImGui.Interfaces;
+using NenTools.ImGui.Interfaces.Shell;
 
 using Reloaded.Mod.Interfaces;
 
@@ -8,88 +9,75 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
-public unsafe class EffectEditWindow : IImguiWindow, IImguiMenuComponent
+public unsafe class EffectEditWindow : IImGuiComponent
 {
+    private readonly IImGui _imGui;
+    private readonly EffectDataHooks _effectDataHooks;
+
     public bool IsOverlay => false;
     public bool IsOpen = false;
 
-    private EffectDataHooks _effectDataHooks;
+    private EstFile _selectedEffectData;
+    private int _selectedTableIndex = -1;
 
-    public EffectEditWindow(EffectDataHooks effectDataHooks)
+    public EffectEditWindow(IImGui imGui, EffectDataHooks effectDataHooks)
     {
+        _imGui = imGui;
         _effectDataHooks = effectDataHooks;
     }
 
-    public void BeginMenuComponent()
+    public void RenderMenu(IImGuiShell imGuiShell)
     {
-        if (ImGui.MenuItemEx("Loaded Effects", "", "", false, true))
+        if (_imGui.MenuItemEx("Loaded Effects"u8, ""u8, false, true))
         {
             IsOpen = true;
         }
     }
 
-    private EstFile _selectedEffectData;
-    private int _selectedTableIndex = -1;
-
-    public void Render(ImguiSupport imguiSupport)
+    public void Render(IImGuiShell imGuiShell)
     {
         if (!IsOpen)
             return;
 
-        if (ImGui.Begin("Effect Edit", ref IsOpen, 0))
+        if (_imGui.Begin("Effect Edit"u8, ref IsOpen))
         {
-            var availRegionVecInt = new ImVec2.__Internal();
-            var availRegionVec = new ImVec2(&availRegionVecInt);
-            ImGui.GetContentRegionAvail(availRegionVec);
+            Vector2 availRegionVec = _imGui.GetContentRegionAvail();
 
             // Make effect list
-            var vecInternal = new ImVec2.__Internal();
-            vecInternal.x = 250;
-            vecInternal.y = availRegionVec.Y;
-            var vector = new ImVec2(&vecInternal);
 
-            ImGui.BeginChildStr("EffectListL", vector, false, 0);
+            _imGui.BeginChild("EffectListL"u8, new Vector2(250, availRegionVec.Y));
             bool visible = true;
             foreach (var effSet in _effectDataHooks.EffectSets)
             {
-                if (ImGui.CollapsingHeaderBoolPtr(effSet.Key, ref visible, 0))
+                if (_imGui.CollapsingHeaderBoolPtr(effSet.Key, ref visible, 0))
                 {
-                    var listboxVec_ = new ImVec2.__Internal();
-                    var listboxVec = new ImVec2(&listboxVec_);
-
-                    if (ImGui.BeginListBox("##Listbox1", listboxVec))
+                    if (_imGui.BeginListBox("##Listbox1"u8, Vector2.Zero))
                     {
                         foreach (var eff in effSet.Value.EffectIds)
                         {
-                            var vecInternal_ = new ImVec2.__Internal();
-                            var vector_ = new ImVec2(&vecInternal_);
-
-                            if (ImGui.SelectableBool(eff.Key.ToString(), false, 0, vector_))
+                            if (_imGui.Selectable(eff.Key.ToString()))
                             {
                                 _selectedEffectData = eff.Value;
                                 _selectedTableIndex = -1;
                             }
                         }
 
-                        ImGui.EndListBox();
+                        _imGui.EndListBox();
                     }
                 }
             }
-            ImGui.EndChild();
+            _imGui.EndChild();
 
-            var effectEditorRVec_ = new ImVec2.__Internal();
-            vecInternal.y = availRegionVec.Y;
-            var effectEditorRVec = new ImVec2(&effectEditorRVec_);
+            _imGui.SameLineEx(0, 4);
 
-            ImGui.SameLine(0, 4);
-
-            ImGui.BeginChildStr("EffectEditorR", effectEditorRVec, false, 0);
+            _imGui.BeginChild("EffectEditorR"u8, Vector2.Zero);
 
             if (_selectedEffectData is not null && *(uint*)_selectedEffectData.FilePointer != 0x00464645)
             {
@@ -99,37 +87,34 @@ public unsafe class EffectEditWindow : IImguiWindow, IImguiMenuComponent
 
             if (_selectedEffectData is not null)
             {
-                ImGui.Text($"{_selectedEffectData.Id} (est: 0x{_selectedEffectData.FilePointer:X8}) ");
-                ImGui.Separator();
+                _imGui.Text($"{_selectedEffectData.Id} (est: 0x{_selectedEffectData.FilePointer:X8}) ");
+                _imGui.Separator();
 
                 if (true)
                 {
 
                     sEstHeader* estHeader = (sEstHeader*)_selectedEffectData.FilePointer;
-                    ImGui.Text($"NumEntries: {estHeader->NumEntries}");
-                    ImGui.Text($"EntryArrayMapOffset: 0x{estHeader->EntryArrayMapOffset:X}");
-                    ImGui.Text($"OffsetOfFunctions: 0x{estHeader->OffsetOfFunctions:X}");
-                    ImGui.Text($"EntryDataOffsetStart: 0x{estHeader->EntryDataOffsetStart:X}");
-                    ImGui.Text($"FunctionSize: 0x{estHeader->FunctionSize:X}");
-                    ImGui.Text($"NumFunctionsPerTable: {estHeader->NumFunctionsPerTable}");
+                    _imGui.Text($"NumEntries: {estHeader->NumEntries}");
+                    _imGui.Text($"EntryArrayMapOffset: 0x{estHeader->EntryArrayMapOffset:X}");
+                    _imGui.Text($"OffsetOfFunctions: 0x{estHeader->OffsetOfFunctions:X}");
+                    _imGui.Text($"EntryDataOffsetStart: 0x{estHeader->EntryDataOffsetStart:X}");
+                    _imGui.Text($"FunctionSize: 0x{estHeader->FunctionSize:X}");
+                    _imGui.Text($"NumFunctionsPerTable: {estHeader->NumFunctionsPerTable}");
 
 
-                    if (ImGui.BeginCombo($"Entries", _selectedTableIndex == -1 ? "Select Table..." : $"Table #{_selectedTableIndex}", 0))
+                    if (_imGui.BeginCombo($"Entries", _selectedTableIndex == -1 ? "Select Table..." : $"Table #{_selectedTableIndex}", 0))
                     {
                         for (int i = 0; i < estHeader->NumEntries; i++)
                         {
-                            var cb_ = new ImVec2.__Internal();
-                            var cb = new ImVec2(&cb_);
-
-                            if (ImGui.SelectableBool($"Table #{i}", false, 0, cb))
+                            if (_imGui.Selectable($"Table #{i}"))
                             {
                                 _selectedTableIndex = i;
                             }
 
                             if (i == _selectedTableIndex)
-                                ImGui.SetItemDefaultFocus();
+                                _imGui.SetItemDefaultFocus();
                         }
-                        ImGui.EndCombo();
+                        _imGui.EndCombo();
                     }
 
                     if (_selectedTableIndex != -1)
@@ -142,19 +127,16 @@ public unsafe class EffectEditWindow : IImguiWindow, IImguiMenuComponent
 
                         for (int j = 0; j < estHeader->NumFunctionsPerTable; j++)
                         {
-                            var btn_ = new ImVec2.__Internal();
-                            var btn = new ImVec2(&btn_);
-
-                            ImGui.BeginDisabled(tableFuncs[j].Size != 0);
-                            if (ImGui.Button($"{Encoding.ASCII.GetString(BitConverter.GetBytes(tableFuncs[j].FuncName))}", btn))
+                            _imGui.BeginDisabled(tableFuncs[j].Size != 0);
+                            if (_imGui.Button($"{Encoding.ASCII.GetString(BitConverter.GetBytes(tableFuncs[j].FuncName))}"))
                             {
 
                             }
 
-                            ImGui.EndDisabled();
+                            _imGui.EndDisabled();
 
                             if (j != estHeader->NumFunctionsPerTable - 1)
-                                ImGui.SameLine(0, 2);
+                                _imGui.SameLineEx(0, 2);
                         }
 
                         for (int j = 0; j < estHeader->NumFunctionsPerTable; j++)
@@ -170,10 +152,11 @@ public unsafe class EffectEditWindow : IImguiWindow, IImguiMenuComponent
             }
             else
             {
-                ImGui.Text($"No EST Selected");
+                _imGui.Text("No EST Selected"u8);
             }
 
-            ImGui.EndChild();
+            _imGui.EndChild();
         }
+        _imGui.End();
     }
 }

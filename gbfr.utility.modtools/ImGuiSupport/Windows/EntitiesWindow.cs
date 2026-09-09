@@ -1,8 +1,8 @@
-﻿using DearImguiSharp;
+﻿using gbfr.utility.modtools.Hooks.Behavior;
+using gbfr.utility.modtools.Structs;
 
-using gbfr.utility.modtools.Hooks.Behavior;
-
-using Reloaded.Mod.Interfaces;
+using NenTools.ImGui.Interfaces;
+using NenTools.ImGui.Interfaces.Shell;
 
 using System;
 using System.Collections.Concurrent;
@@ -16,20 +16,18 @@ using System.Threading.Tasks;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows;
 
-public unsafe class EntitiesWindow : IImguiWindow, IImguiMenuComponent
+public unsafe class EntitiesWindow : IImGuiComponent
 {
+    private readonly IImGui _imGui;
+    private readonly EntityHooks _entityHooks;
+
     public bool IsOverlay => false;
     public bool IsOpen = false;
 
     private bool _showHateParams = false;
     private bool _showTargetHateParams = false;
 
-    private EntityHooks _entityHooks;
-
-    public EntitiesWindow(EntityHooks entityHooks)
-    {
-        _entityHooks = entityHooks;
-    }
+    private ConcurrentDictionary<uint, uint> _currentTargets = [];
 
     public Dictionary<ulong, string> HateParamNames = new()
     {
@@ -53,28 +51,32 @@ public unsafe class EntitiesWindow : IImguiWindow, IImguiMenuComponent
         [0x1F39A2DCD44D0B2E] = "AttackHateFewTarget", //  - hateRateTargetCountFewPlayer_",
     };
 
-    public void BeginMenuComponent()
+    public EntitiesWindow(IImGui imGui, EntityHooks entityHooks)
     {
-        if (ImGui.MenuItemEx("Enemies & Hostility / Hate", "", "", false, true))
+        _imGui = imGui;
+        _entityHooks = entityHooks;
+    }
+
+    public void RenderMenu(IImGuiShell imGuiShell)
+    {
+        if (_imGui.MenuItemEx("Enemies & Hostility / Hate"u8, ""u8, false, true))
         {
             IsOpen = true;
         }
     }
 
-    private ConcurrentDictionary<uint, uint> _currentTargets = [];
-
-    public void Render(ImguiSupport imguiSupport)
+    public void Render(IImGuiShell imGuiShell)
     {
         if (!IsOpen)
             return;
 
-        if (ImGui.Begin("Hostility / 'Hate' Data", ref IsOpen, 0))
+        if (_imGui.Begin("Hostility / 'Hate' Data"u8, ref IsOpen, 0))
         {
             if (_entityHooks.LoadedEntitiesPtr is null)
                 return;
 
-            ImGui.Checkbox("Show Enemy Hate Params", ref _showHateParams);
-            ImGui.Checkbox("Show Targets Hate Params", ref _showTargetHateParams);
+            _imGui.Checkbox("Show Enemy Hate Params"u8, ref _showHateParams);
+            _imGui.Checkbox("Show Targets Hate Params"u8, ref _showTargetHateParams);
 
             Span<EntityRef> entries = _entityHooks.LoadedEntitiesPtr->AsSpan();
             for (int i = *(int*)_entityHooks.EnemyStartIndexPtr; i < entries.Length; i++)
@@ -87,86 +89,98 @@ public unsafe class EntitiesWindow : IImguiWindow, IImguiMenuComponent
                 cObj* enemyObj = entWrapper->EntityObjPtr;
 
                 string name = Marshal.PtrToStringAnsi((nint)(&entWrapper->Name[0]));
-                ExEmAttackTarget* enemyAttackTarget = _entityHooks.WRAPPER_EntityRef_GetEmAttackTargetExtension((EntityRef*)Unsafe.AsPointer(ref enemyEntity));
+                IExEmAttackTarget enemyAttackTarget = new ExEmAttackTargetView<ExEmAttackTarget_ER>((ExEmAttackTarget_ER*)_entityHooks.WRAPPER_EntityRef_GetEmAttackTargetExtension((EntityRef*)Unsafe.AsPointer(ref enemyEntity)));
                 if (enemyAttackTarget is null)
                     continue;
 
-                if (enemyAttackTarget->Target.EntityRefPtr is not null)
+                if (_imGui.CollapsingHeader($"{name} (AID {enemyAttackTarget.Target.ActorId}) ({enemyObj->GetName()}) - tgt updates: {enemyAttackTarget.NumTargetUpdates}###enemy{enemyEntity.ActorId}##"))
                 {
-                    ImGui.Text($"{name} (actor id {enemyAttackTarget->Target.ActorId}) ({enemyObj->GetName()}) - num updates: {enemyAttackTarget->NumTargetUpdates}");
-                    ImGui.Text($"-> Targetting: {enemyAttackTarget->Target.EntityRefPtr->EntityObjPtr->GetName()} (actor id {enemyAttackTarget->Target.ActorId})");
-
-                    if (_currentTargets.TryGetValue(enemyEntity.ActorId, out uint targetId))
+                    if (enemyAttackTarget.Target.EntityRefPtr is not null)
                     {
-                        if (targetId != enemyAttackTarget->Target.ActorId)
+                        _imGui.Text($"-> Targetting: {enemyAttackTarget.Target.EntityRefPtr->EntityObjPtr->GetName()} (actor id {enemyAttackTarget.Target.ActorId})");
+
+                        if (_currentTargets.TryGetValue(enemyEntity.ActorId, out uint targetId))
                         {
-                            OverlayLogger.Instance.AddMessage($"{name} (actor id {enemyEntity.ActorId}) ({enemyObj->GetName()}) now targets {enemyAttackTarget->Target.EntityRefPtr->EntityObjPtr->GetName()} (actor id {enemyAttackTarget->Target.ActorId})");
-                            _currentTargets[enemyEntity.ActorId] = enemyAttackTarget->Target.ActorId;
+                            if (targetId != enemyAttackTarget.Target.ActorId)
+                            {
+                                imGuiShell.LogWriteLine($"{nameof(EntitiesWindow)}", $"{name} (actor id {enemyEntity.ActorId}) ({enemyObj->GetName()}) now targets {enemyAttackTarget.Target.EntityRefPtr->EntityObjPtr->GetName()} (actor id {enemyAttackTarget.Target.ActorId})");
+                                _currentTargets[enemyEntity.ActorId] = enemyAttackTarget.Target.ActorId;
+                            }
                         }
+                        else
+                            _currentTargets.TryAdd(enemyEntity.ActorId, enemyAttackTarget.Target.ActorId);
+
                     }
                     else
-                        _currentTargets.TryAdd(enemyEntity.ActorId, enemyAttackTarget->Target.ActorId);
+                        _imGui.Text($"{name} ({enemyObj->GetName()}) - no target");
 
-                }
-                else
-                    ImGui.Text($"{name} ({enemyObj->GetName()}) - no target");
 
-                if (_showHateParams)
-                {
-                    ImGui.Text("Params:");
-                    var node = enemyAttackTarget->HashToAttackHateParamMap.List.Node->Next;
-                    for (int j = 0; j < enemyAttackTarget->HashToAttackHateParamMap.Size(); j++)
+                    if (_showHateParams)
                     {
-                        var data = node->Data;
-                        float value = *(float*)data;
-
-                        if (HateParamNames.TryGetValue(node->Key, out string paramName))
-                            ImGui.BulletText($"{paramName}: {value:F2}");
-                        else
-                            ImGui.BulletText($"{node->Key:X8}: {value:F2}");
-                        node = node->Next;
-                    }
-                }
-
-                ImGui.Text("Enemy Targets:");
-                var span = enemyAttackTarget->AttackTargetPlayerList.AsSpan();
-                for (int j = 0; j < span.Length; j++)
-                {
-                    ref AttackTargetPlayerEntry attackTargetEntry = ref span[j];
-                    AttackTargetPlayer* attackTarget = attackTargetEntry.AttackTarget;
-                    if (attackTarget is not null && enemyAttackTarget->Target.EntityRefPtr is not null)
-                    {
-                        if (enemyAttackTarget->Target.EntityRefPtr->EntityObjPtr == attackTarget->TargettingPlayer.EntityRefPtr->EntityObjPtr)
-                            ImGui.BulletText($"=> {j} ({attackTarget->TargettingPlayer.EntityRefPtr->EntityObjPtr->GetName()}) - last targetted index: {attackTarget->LastTargettedIndex} - hate: {attackTarget->WeightMultiplier}");
-                        else
-                            ImGui.BulletText($"{j} ({attackTarget->TargettingPlayer.EntityRefPtr->EntityObjPtr->GetName()}) - last targetted index: {attackTarget->LastTargettedIndex} - hate: {attackTarget->WeightMultiplier}");
-
-                        if (_showTargetHateParams)
+                        _imGui.Text("Params:"u8);
+                        var node = enemyAttackTarget.HashToAttackHateParamMap.List.Node->Next;
+                        for (int j = 0; j < enemyAttackTarget.HashToAttackHateParamMap.Size(); j++)
                         {
-                            ImGui.Indent(12);
+                            var data = node->Data;
+                            float value = *(float*)data;
 
-                            var node = attackTarget->HateParams.List.Node->Next;
-                            for (int k = 0; k < attackTarget->HateParams.Size(); k++)
+                            if (HateParamNames.TryGetValue(node->Key, out string paramName))
+                                _imGui.BulletText($"{paramName}: {value:F2}");
+                            else
+                                _imGui.BulletText($"{node->Key:X8}: {value:F2}");
+                            node = node->Next;
+                        }
+                    }
+
+                    _imGui.Text("Enemy Targets:"u8);
+                    var span = enemyAttackTarget.AttackTargetPlayerList.AsSpan();
+                    for (int j = 0; j < span.Length; j++)
+                    {
+                        ref AttackTargetPlayerEntry attackTargetEntry = ref span[j];
+                        AttackTargetPlayer* attackTarget = attackTargetEntry.AttackTarget;
+                        if (attackTarget is not null && enemyAttackTarget.Target.EntityRefPtr is not null)
+                        {
+                            _imGui.Indent();
+                            bool openTarget;
+                            string targetTypeName = attackTarget->TargettingPlayer.EntityRefPtr->EntityObjPtr->GetName();
+                            if (enemyAttackTarget.Target.EntityRefPtr->EntityObjPtr == attackTarget->TargettingPlayer.EntityRefPtr->EntityObjPtr)
+                                openTarget = _imGui.CollapsingHeader($"=> {j} ({targetTypeName}) - last targetted index: {attackTarget->LastTargettedIndex} - hate: {attackTarget->WeightMultiplier}###target{attackTarget->TargettingPlayer.ActorId}");
+                            else
+                                openTarget = _imGui.CollapsingHeader($"{j} ({targetTypeName}) - last targetted index: {attackTarget->LastTargettedIndex} - hate: {attackTarget->WeightMultiplier}###target{attackTarget->TargettingPlayer.ActorId}");
+
+                            
+                            if (openTarget)
                             {
-                                UnkHateParamWrapper* data = (UnkHateParamWrapper*)&(node->Data);
-                                AttackHateBase* attackHate = data->AttackHate;
-                                if (HateParamNames.TryGetValue(node->Key, out string paramName))
-                                    ImGui.BulletText($"{paramName} = {attackHate->Param.Value}");
-                                else
-                                    ImGui.BulletText($"0x{node->Key:X8} = {attackHate->Param.Value}");
-                                node = node->Next;
+                                if (_showTargetHateParams)
+                                {
+                                    _imGui.IndentEx(12);
+
+                                    var node = attackTarget->HateParams.List.Node->Next;
+                                    for (int k = 0; k < attackTarget->HateParams.Size(); k++)
+                                    {
+                                        UnkHateParamWrapper* data = (UnkHateParamWrapper*)&(node->Data);
+                                        AttackHateBase* attackHate = data->AttackHate;
+                                        if (HateParamNames.TryGetValue(node->Key, out string paramName))
+                                            _imGui.BulletText($"{paramName} = {attackHate->Param.Value}");
+                                        else
+                                            _imGui.BulletText($"0x{node->Key:X8} = {attackHate->Param.Value}");
+                                        node = node->Next;
+                                    }
+                                    _imGui.UnindentEx(12);
+                                }
                             }
-                            ImGui.Unindent(12);
+                            _imGui.Unindent();
                         }
                     }
                 }
             }
 
-            ImGui.Separator();
+            _imGui.Separator();
             for (uint i = 0; i < 4; i++)
-                ImGui.BulletText($"Player #{i + 1} hostility: {_entityHooks.WRAPPER_GetHostilityForPlayer(i):F2}");
-
+                _imGui.BulletText($"Player #{i + 1} hostility: {_entityHooks.WRAPPER_GetHostilityForPlayer(i):F2}");
         }
+
+        _imGui.End();
     }
 }
 

@@ -1,22 +1,25 @@
-﻿using System;
+﻿using NenTools.Reloaded.ScanManager.Interfaces;
+
+using Reloaded.Hooks.Definitions;
+using Reloaded.Mod.Interfaces;
+
+
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
-using System.Numerics;
-
-using SharedScans.Interfaces;
-using Reloaded.Mod.Interfaces;
-using RyoTune.Reloaded;
-using Reloaded.Hooks.Definitions;
 
 namespace gbfr.utility.modtools.Hooks.Reflection;
 
 public unsafe class ReflectionHooks : IHookBase
 {
     private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
 
     private readonly static Dictionary<string, RelinkObjectType> _knownObjects = new();
     public int ObjectCount => _knownObjects.Count;
@@ -45,29 +48,31 @@ public unsafe class ReflectionHooks : IHookBase
     public delegate bool BehaviorTreeComponentObjectExists(string name);
     public delegate nint GetNewBehaviorTreeComponentByName(string name);
 
-    public ReflectionHooks(ILogger logger)
+    public ReflectionHooks(ILogger logger, IScanManager scanManager, IReloadedHooks hooks)
     {
         _logger = logger;
+        _scanManager = scanManager;
+        _hooks = hooks;
     }
 
-    public void Init()
+    public void Init(string groupSource)
     {
         // We hook this because character object params are created separately.
         
-        Project.Scans.AddScanHook(nameof(CharaParameterBaseList__StaticCtor), (result, hooks)
-            => FUNC_CharaParameterBaseList__StaticCtor = hooks.CreateHook<CharaParameterBaseList__StaticCtor>(CharaParameterBaseList__StaticCtorImpl, result).Activate());
-        Project.Scans.AddScanHook(nameof(CharaParameterBaseList__GetByName), (result, hooks)
-            => FUNC_CharaParameterBaseList__GetByName = hooks.CreateHook<CharaParameterBaseList__GetByName>(CharaParameterBaseList__GetByNameImpl, result).Activate());
+        _scanManager.AddScan(nameof(CharaParameterBaseList__StaticCtor), groupSource, result
+            => FUNC_CharaParameterBaseList__StaticCtor = _hooks.CreateHook<CharaParameterBaseList__StaticCtor>(CharaParameterBaseList__StaticCtorImpl, result).Activate());
+        _scanManager.AddScan(nameof(CharaParameterBaseList__GetByName), groupSource, result
+            => FUNC_CharaParameterBaseList__GetByName = _hooks.CreateHook<CharaParameterBaseList__GetByName>(CharaParameterBaseList__GetByNameImpl, result).Activate());
 
-        Project.Scans.AddScanHook(nameof(RegisterBehaviorTreeComponentFactories), (result, hooks)
-            => HOOK_RegisterBehaviorTreeComponentFactories = hooks.CreateHook<RegisterBehaviorTreeComponentFactories>(ReflectionRegisterObjectFactoriesImpl, result).Activate());
-        Project.Scans.AddScanHook(nameof(RegisterReflectionObjectDelegate), (result, hooks)
-            => HOOK_ReflectionAddObject = hooks.CreateHook<RegisterReflectionObjectDelegate>(ss__reflection__AddObjectImpl, result).Activate());
+        _scanManager.AddScan(nameof(RegisterBehaviorTreeComponentFactories), groupSource, result
+            => HOOK_RegisterBehaviorTreeComponentFactories = _hooks.CreateHook<RegisterBehaviorTreeComponentFactories>(ReflectionRegisterObjectFactoriesImpl, result).Activate());
+        _scanManager.AddScan(nameof(RegisterReflectionObjectDelegate), groupSource, result
+            => HOOK_ReflectionAddObject = _hooks.CreateHook<RegisterReflectionObjectDelegate>(ss__reflection__AddObjectImpl, result).Activate());
 
-        Project.Scans.AddScanHook(nameof(BehaviorTreeComponentObjectExists), (result, hooks)
-            => FUNC_BehaviorTreeComponentObjectExists = hooks.CreateWrapper<BehaviorTreeComponentObjectExists>(result, out _));
-        Project.Scans.AddScanHook(nameof(GetNewBehaviorTreeComponentByName), (result, hooks)
-            => FUNC_GetNewBehaviorTreeComponentByName = hooks.CreateWrapper<GetNewBehaviorTreeComponentByName>(result, out _));
+        _scanManager.AddScan(nameof(BehaviorTreeComponentObjectExists), groupSource, result
+            => FUNC_BehaviorTreeComponentObjectExists = _hooks.CreateWrapper<BehaviorTreeComponentObjectExists>(result, out _));
+        _scanManager.AddScan(nameof(GetNewBehaviorTreeComponentByName), groupSource, result
+            => FUNC_GetNewBehaviorTreeComponentByName = _hooks.CreateWrapper<GetNewBehaviorTreeComponentByName>(result, out _));
     }
 
     // This hooks the object registerer for all Param files i.e Em0001Param.
@@ -158,18 +163,12 @@ public unsafe class ReflectionHooks : IHookBase
                 var attrName = Marshal.PtrToStringAnsi((nint)attr->pTypeName);
                 var attrTypeName = Marshal.PtrToStringAnsi((nint)attr->pAttrName);
 
-                if (HasAttribute(baseObj, attrName))
-                    continue;
-
                 relinkObjectType.Attributes.TryAdd(attrName, new RelinkObjectAttribute(attrName, attrTypeName, attr));
             }
             else
             {
                 var attrName = Marshal.PtrToStringAnsi((nint)attr->pAttrName);
                 var attrTypeName = Marshal.PtrToStringAnsi((nint)attr->pTypeName);
-
-                if (HasAttribute(baseObj, attrName))
-                    continue;
 
                 relinkObjectType.Attributes.TryAdd(attrName, new RelinkObjectAttribute(attrName, attrTypeName, attr));
             }
@@ -220,6 +219,10 @@ public unsafe class ReflectionHooks : IHookBase
         _logger.WriteLine("{");
 
         RelinkObjectType inheritType = null;
+        if (!string.IsNullOrWhiteSpace(objectType.InheritName))
+        {
+            _knownObjects.TryGetValue(objectType.InheritName, out inheritType);
+        }
 
         _logger.WriteLine("    [JsonIgnore]");
         _logger.WriteLine($"    public override string ComponentName => nameof({objectType.Name});");
@@ -237,21 +240,24 @@ public unsafe class ReflectionHooks : IHookBase
         _logger.WriteLine($"    public {objectType.Name}()");
         _logger.WriteLine("    {");
 
-        foreach (KeyValuePair<string, RelinkObjectAttribute> attr in objectType.Attributes)
+        if (inheritType is not null)
         {
-            if (inheritType is not null && inheritType.Attributes.ContainsKey(attr.Key))
+            foreach (KeyValuePair<string, RelinkObjectAttribute> attr in inheritType.Attributes)
             {
-                string valStr = GetValueStr(attr.Value, defaultObjectPtr);
-                if (!string.IsNullOrEmpty(valStr))
+                if (inheritType.Attributes.ContainsKey(attr.Key))
                 {
-                    string humanizedAttrName = attr.Key;
-                    if (attr.Key.EndsWith('_'))
+                    string valStr = GetValueStr(attr.Value, defaultObjectPtr);
+                    if (!string.IsNullOrEmpty(valStr))
                     {
-                        humanizedAttrName = attr.Key.Substring(0, attr.Key.Length - 1);
-                        humanizedAttrName = FirstCharToUpper(humanizedAttrName);
-                    }
+                        string humanizedAttrName = attr.Key;
+                        if (attr.Key.EndsWith('_'))
+                        {
+                            humanizedAttrName = attr.Key.Substring(0, attr.Key.Length - 1);
+                            humanizedAttrName = FirstCharToUpper(humanizedAttrName);
+                        }
 
-                    _logger.WriteLine($"        {humanizedAttrName}{GetValueStr(attr.Value, defaultObjectPtr)}");
+                        _logger.WriteLine($"        {humanizedAttrName}{GetValueStr(attr.Value, defaultObjectPtr)}");
+                    }
                 }
             }
         }

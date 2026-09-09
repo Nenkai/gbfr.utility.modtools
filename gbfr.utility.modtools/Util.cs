@@ -1,4 +1,6 @@
-﻿using System;
+﻿using gbfr.utility.modtools.Structs;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -15,4 +17,13 @@ public class Utils
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     public unsafe static ref T NullReference<T>() => ref Unsafe.AsRef<T>((void*)0x0);
+
+}
+
+public static class PtrUtils
+{
+    public static unsafe T* Ptr<T>(this IPtr ptr) where T : unmanaged
+    {
+        return (T*)ptr.NativePointer;
+    }
 }

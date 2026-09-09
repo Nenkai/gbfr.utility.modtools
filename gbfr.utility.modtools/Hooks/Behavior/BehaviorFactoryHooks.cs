@@ -9,26 +9,30 @@ using System.Threading.Tasks;
 using Reloaded.Hooks.Definitions;
 using Reloaded.Mod.Interfaces;
 
-using RyoTune.Reloaded;
+using NenTools.Reloaded.ScanManager.Interfaces;
 
 namespace gbfr.utility.modtools.Hooks.Behavior;
 
 public unsafe class BehaviorFactoryHooks : IHookBase
 {
-    private ILogger _logger;
+    private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
 
-    public unsafe delegate void BehaviorFactory_RegisterClass(void* @this, void* outUnk, uint* objId, ClassInfo* classInfo);
+    public delegate void BehaviorFactory_RegisterClass(void* @this, void* outUnk, uint* objId, ClassInfo* classInfo);
     public static IHook<BehaviorFactory_RegisterClass> HOOK_BehaviorFactory_RegisterClass { get; private set; }
 
-    public BehaviorFactoryHooks(ILogger logger)
+    public BehaviorFactoryHooks(ILogger logger, IScanManager scanManager, IReloadedHooks hooks)
     {
         _logger = logger;
+        _scanManager = scanManager;
+        _hooks = hooks;
     }
 
-    public void Init()
+    public void Init(string groupSource)
     {
-        Project.Scans.AddScanHook(nameof(BehaviorFactory_RegisterClass), (result, hooks)
-            => HOOK_BehaviorFactory_RegisterClass = hooks.CreateHook<BehaviorFactory_RegisterClass>(BehaviorFactory_RegisterClassImpl, result).Activate());
+        _scanManager.AddScan(nameof(BehaviorFactory_RegisterClass), groupSource, result
+            => HOOK_BehaviorFactory_RegisterClass = _hooks.CreateHook<BehaviorFactory_RegisterClass>(BehaviorFactory_RegisterClassImpl, result).Activate());
     }
 
     public void BehaviorFactory_RegisterClassImpl(void* @this, void* outUnk, uint* objId, ClassInfo* classInfo)
@@ -61,7 +65,8 @@ public enum ObjIdType
     Wn = 0x104,
     Np = 0x10A,
     Tr = 0x10B,
-    Bt = 0x10C
+    Bt = 0x10C,
+    Su = 0x10D,
 }
 
 public unsafe struct ClassInfo /* BehaviorFactory::ClassInfo */

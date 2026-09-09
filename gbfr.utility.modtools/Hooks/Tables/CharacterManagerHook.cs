@@ -1,34 +1,41 @@
-﻿using System;
+﻿using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
+
+using NenTools.Reloaded.ScanManager.Interfaces;
+
+using Reloaded.Hooks.Definitions;
+using Reloaded.Mod.Interfaces;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
-
-using Reloaded.Hooks.Definitions;
-
-using RyoTune.Reloaded;
-
 namespace gbfr.utility.modtools.Hooks.Tables;
 
 public unsafe class CharacterManagerHook : TableManagerBase
 {
+    private readonly ILogger _logger;
+    private readonly IReloadedHooks _hooks;
+    private readonly IScanManager _scanManager;
+
     public delegate void CharacterManagerLoad(CharacterManager* this_);
     public IHook<CharacterManagerLoad> HOOK_CharacterManagerLoad { get; private set; }
 
     private CharacterManagerWindow _characterManagerWindow;
 
-    public CharacterManagerHook()
+    public CharacterManagerHook(ILogger logger, IScanManager scanManager, IReloadedHooks hooks)
     {
-
+        _logger = logger;
+        _scanManager = scanManager;
+        _hooks = hooks;
     }
 
-    public override void Init()
+    public override void Init(string groupSource)
     {
-        Project.Scans.AddScanHook(nameof(CharacterManagerLoad), (result, hooks)
-            => HOOK_CharacterManagerLoad = hooks.CreateHook<CharacterManagerLoad>(CharacterManagerLoadImpl, result).Activate());
+        _scanManager.AddScan(nameof(CharacterManagerLoad), groupSource, result
+            => HOOK_CharacterManagerLoad = _hooks.CreateHook<CharacterManagerLoad>(CharacterManagerLoadImpl, result).Activate());
     }
 
     public void CharacterManagerLoadImpl(CharacterManager* this_)

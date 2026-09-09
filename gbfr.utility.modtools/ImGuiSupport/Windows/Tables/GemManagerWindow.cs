@@ -1,19 +1,21 @@
-﻿using System;
+﻿using gbfr.utility.modtools.Hooks.Tables;
+
+using NenTools.ImGui.Interfaces;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-
-using gbfr.utility.modtools.Hooks.Tables;
 
 namespace gbfr.utility.modtools.ImGuiSupport.Windows.Tables;
 
 public class GemManagerWindow : TableEditorWindow
 {
-    public GemManagerWindow(GemManagerHook tableManagerBase)
-        : base("GemManager", tableManagerBase)
+    public GemManagerWindow(IImGui imGui, GemManagerHook tableManagerBase)
+        : base(imGui, "GemManager", tableManagerBase)
     {
 
     }

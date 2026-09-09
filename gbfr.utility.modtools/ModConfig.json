@@ -49,11 +49,12 @@
   "ModDependencies": [
     "Reloaded.Memory.SigScan.ReloadedII",
     "reloaded.sharedlib.hooks",
-    "SharedScans.Reloaded"
+    "gbfrelink.utility.manager"
   ],
   "OptionalDependencies": [],
   "SupportedAppId": [
-    "granblue_fantasy_relink.exe"
+    "granblue_fantasy_relink.exe",
+    "granblue_fantasy_relink_endless_ragnarok_beta_test.exe"
   ],
   "ProjectUrl": ""
 }
